@@ -19,7 +19,7 @@ class SimpleAssistantProvider(
     @Value("\${chat.service.memory-provider.max-messages}") private val maxMessages: String,
 ): AssistantProvider {
 
-    val instantiate: (String) -> RagAssistant = { docsLocation ->
+    private val instantiate: (String) -> RagAssistant = { docsLocation ->
 
         val embeddingStore = InMemoryEmbeddingStore<TextSegment>()
 
@@ -33,7 +33,6 @@ class SimpleAssistantProvider(
             .chatMemoryProvider { MessageWindowChatMemory.withMaxMessages(maxMessages.toInt()) }
             .contentRetriever(contentRetriever)
             .build()
-
     }
 
     override fun newAssistant(docsLocation: String): RagAssistant {

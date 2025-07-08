@@ -6,7 +6,6 @@ import dev.langchain4j.data.document.splitter.DocumentSplitters
 import dev.langchain4j.data.segment.TextSegment
 import dev.langchain4j.memory.chat.MessageWindowChatMemory
 import dev.langchain4j.model.chat.StreamingChatModel
-import dev.langchain4j.model.embedding.EmbeddingModel
 import dev.langchain4j.model.embedding.onnx.bgesmallenv15q.BgeSmallEnV15QuantizedEmbeddingModel
 import dev.langchain4j.rag.DefaultRetrievalAugmentor
 import dev.langchain4j.rag.content.aggregator.ReRankingContentAggregator
@@ -26,9 +25,9 @@ class AugmentedAssistantProvider(
     @Value("\${chat.service.memory-provider.max-messages}") private val maxMessages: String,
 ): AssistantProvider {
 
-    val instantiate: (String) -> RagAssistant =  { docsLocation ->
+    private val instantiate: (String) -> RagAssistant =  { docsLocation ->
 
-        val embeddingModel: EmbeddingModel = BgeSmallEnV15QuantizedEmbeddingModel()
+        val embeddingModel = BgeSmallEnV15QuantizedEmbeddingModel()
 
         val embeddingStore = InMemoryEmbeddingStore<TextSegment>()
 

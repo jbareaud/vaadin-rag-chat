@@ -2,7 +2,6 @@ package org.jbareaud.ragchat.ui
 
 import com.vaadin.flow.component.ClickEvent
 import com.vaadin.flow.component.Text
-import com.vaadin.flow.component.UI
 import com.vaadin.flow.component.button.Button
 import com.vaadin.flow.component.dialog.Dialog
 import com.vaadin.flow.component.messages.MessageInput
@@ -19,10 +18,8 @@ import org.jbareaud.ragchat.ai.ChatService
 import org.jbareaud.ragchat.logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.vaadin.firitin.components.messagelist.MarkdownMessage
-import reactor.core.scheduler.Schedulers
 import java.io.File
-import java.util.*
-import java.util.concurrent.Executors
+import java.util.UUID
 
 
 @PageTitle("Chat with LangChain4j")
@@ -69,7 +66,7 @@ class RagChatView: VerticalLayout() {
                 answer.element.executeJs("this.scrollIntoView()")
                 messageList.add(question)
                 messageList.add(answer)
-                newMessage(questionText, answer)
+                answer.appendChatResponseAsync(questionText)
             } else {
                 Notification.show("Can't chat, knowledge base hasn't been properly initialized. Click the 'New Chat' button and pick a valid location.")
             }
@@ -83,7 +80,7 @@ class RagChatView: VerticalLayout() {
         add(messageInput)
     }
 
-    private fun newMessage(questionText: String, answer: MarkdownMessage) {
+    private fun MarkdownMessage.appendChatResponseAsync(questionText: String) {
         val workerUI = ui.get()
         service.streamNewMessage(chatId, questionText)
             .doOnError {
@@ -93,7 +90,8 @@ class RagChatView: VerticalLayout() {
             }
             .subscribe { message ->
                 workerUI.access {
-                    answer.appendMarkdownAsync(message)
+                    appendMarkdownAsync(message)
+                    element.executeJs("this.scrollIntoView()")
                 }
             }
     }

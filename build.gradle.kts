@@ -41,6 +41,10 @@ dependencies {
 	implementation("dev.langchain4j:langchain4j-cohere:${property("langchain4jVersion")}")
 	implementation("dev.langchain4j:langchain4j-onnx-scoring:${property("langchain4jVersion")}")
 
+	// Jackson
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
+
 	// tests
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
