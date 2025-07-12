@@ -19,6 +19,7 @@ class AssistantConfig(private val properties: ConfigProperties) {
     fun ollamaModels(props: ConfigProperties) =
         OllamaModels.builder()
             .baseUrl(props.chatOllamaBaseUrl)
+            .httpClientBuilder(httpClientBuilder())
             .build()
 
     @Bean
