@@ -1,5 +1,6 @@
 package org.jbareaud.ragchat.ai
 
+import dev.langchain4j.model.ollama.OllamaModel
 import dev.langchain4j.model.ollama.OllamaModels
 import dev.langchain4j.model.scoring.ScoringModel
 import org.jbareaud.ragchat.ai.provider.AssistantProvider
@@ -29,21 +30,15 @@ class AssistantChatService(
 
     fun available() = providers.map(AssistantProvider::type).sorted()
 
-    fun embeddings() = listModels
-        .filter { it.details.family in embeddingFamilies }
-        .map { it.name }
-        .sorted()
+    fun embeddings() = listModels.toNameList(embeddingFamilies)
 
-    fun chatModels() = listModels
-        .filter { it.details.family in chatFamilies }
-        .map { it.name }
-        .sorted()
+    fun chatModels() = listModels.toNameList(chatFamilies)
 
     fun hasReranker() = scoringModel != null
 
     fun defaultChatModel() =
         defaultChatSelection
-            .intersect(listModels.map { it.name }.toSet())
+            .intersect(chatModels().toSet())
             .firstOrNull()
 
     fun newAssistant(
@@ -86,3 +81,7 @@ class AssistantChatService(
     }
 }
 
+private fun List<OllamaModel>.toNameList(familyList: List<String>) =
+    filter { it.details.family in familyList }
+        .map { it.name }
+        .sorted()
