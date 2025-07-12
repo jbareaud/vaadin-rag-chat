@@ -1,24 +1,28 @@
 package org.jbareaud.ragchat.ai.provider
 
 import dev.langchain4j.data.document.splitter.DocumentSplitters
+import dev.langchain4j.http.client.HttpClientBuilder
 import dev.langchain4j.model.chat.StreamingChatModel
+import dev.langchain4j.model.embedding.EmbeddingModel
+import dev.langchain4j.model.scoring.ScoringModel
+import org.jbareaud.ragchat.ai.ConfigProperties
+import org.jbareaud.ragchat.ai.AssistantType
 import org.jbareaud.ragchat.ai.splitter.MediawikiDocumentSplitter
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 
 @Service
-@ConditionalOnProperty(name = ["chat.service.provider"], havingValue = "MEDIAWIKI")
 class MediawikiAssistantProvider(
-    chatModel: StreamingChatModel,
-    @Value("\${chat.service.content-retriever.max-results}") maxResults: String,
-    @Value("\${chat.service.memory-provider.max-messages}") maxMessages: String,
-): AugmentedAssistantProvider(chatModel, maxResults, maxMessages) {
+    props: ConfigProperties,
+    httpClientBuilder: HttpClientBuilder,
+    scoringModel: ScoringModel?,
+): AugmentedAssistantProvider(props, httpClientBuilder, scoringModel) {
+
+    override fun type() = AssistantType.MEDIAWIKI
 
     override fun documentSplitter() =
         MediawikiDocumentSplitter(
-            maxSegmentSizeInChars = 300,
-            maxOverlapSizeInChars = 100,
-            subSplitter = DocumentSplitters.recursive(300, 100),
+            maxSegmentSizeInChars = props.splitterMaxChars,
+            maxOverlapSizeInChars = props.splitterOverlapChars,
+            subSplitter = DocumentSplitters.recursive(props.splitterMaxChars, props.splitterOverlapChars),
         )
 }

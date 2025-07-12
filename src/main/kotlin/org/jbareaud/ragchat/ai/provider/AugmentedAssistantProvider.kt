@@ -4,30 +4,43 @@ import dev.langchain4j.data.document.DocumentSplitter
 import dev.langchain4j.data.document.loader.FileSystemDocumentLoader
 import dev.langchain4j.data.document.splitter.DocumentSplitters
 import dev.langchain4j.data.segment.TextSegment
+import dev.langchain4j.http.client.HttpClientBuilder
 import dev.langchain4j.memory.chat.MessageWindowChatMemory
-import dev.langchain4j.model.chat.StreamingChatModel
 import dev.langchain4j.model.embedding.onnx.bgesmallenv15q.BgeSmallEnV15QuantizedEmbeddingModel
+import dev.langchain4j.model.ollama.OllamaEmbeddingModel
+import dev.langchain4j.model.scoring.ScoringModel
 import dev.langchain4j.rag.DefaultRetrievalAugmentor
 import dev.langchain4j.rag.content.aggregator.ReRankingContentAggregator
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever
 import dev.langchain4j.service.AiServices
 import dev.langchain4j.store.embedding.EmbeddingStoreIngestor
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.jbareaud.ragchat.ai.ConfigProperties
+import org.jbareaud.ragchat.ai.AssistantType
+import org.jbareaud.ragchat.logger
 import org.springframework.stereotype.Service
+import java.time.Duration
+import java.time.temporal.ChronoUnit
 
 @Service
-@ConditionalOnProperty(name = ["chat.service.provider"], havingValue = "AUGMENTED")
 class AugmentedAssistantProvider(
-    private val chatModel: StreamingChatModel,
-    @Value("\${chat.service.content-retriever.max-results}") private val maxResults: String,
-    @Value("\${chat.service.memory-provider.max-messages}") private val maxMessages: String,
-): AssistantProvider {
+    props: ConfigProperties,
+    httpClientBuilder: HttpClientBuilder,
+    private val scoringModel: ScoringModel? = null,
+): SimpleAssistantProvider(props, httpClientBuilder) {
 
-    private val instantiate: (String) -> RagAssistant =  { docsLocation ->
+    override fun type() = AssistantType.AUGMENTED
 
-        val embeddingModel = BgeSmallEnV15QuantizedEmbeddingModel()
+    override fun instantiateAssistant(
+        chatModelName: String,
+        embeddingModelName: String?,
+        useReranker: Boolean,
+        docsLocation: String
+    ): RagAssistant {
+
+        val streamingChatModel = streamingChatModel(chatModelName)
+
+        val embeddingModel = embeddingModel(embeddingModelName)
 
         val embeddingStore = InMemoryEmbeddingStore<TextSegment>()
 
@@ -38,48 +51,60 @@ class AugmentedAssistantProvider(
             .build()
 
         val docs = FileSystemDocumentLoader.loadDocuments(docsLocation)
-        ingestor.ingest(docs);
+
+        try {
+            ingestor.ingest(docs)
+        } catch (err: Exception) {
+            val message = "Error during document ingestion"
+            logger().error("message: $err")
+            throw RuntimeException(message, err)
+        }
 
         val contentRetriever = EmbeddingStoreContentRetriever.builder()
             .embeddingStore(embeddingStore)
             .embeddingModel(embeddingModel)
-            .maxResults(maxResults.toInt())
+            .maxResults(props.contentRetrieverMaxResults)
             .build()
 
         val retrievalAugmentor = DefaultRetrievalAugmentor.builder()
             .contentRetriever(contentRetriever)
             .apply {
-                reRankingContentAggregator()?.let { contentAggregator(it) }
+                if (useReranker) reRankingContentAggregator()?.let { contentAggregator(it) }
             }
             .build()
 
-        AiServices.builder(RagAssistant::class.java)
-            .streamingChatModel(chatModel)
-            .chatMemoryProvider { MessageWindowChatMemory.withMaxMessages(maxMessages.toInt()) }
+        return AiServices.builder(RagAssistant::class.java)
+            .streamingChatModel(streamingChatModel)
+            .chatMemoryProvider { MessageWindowChatMemory.withMaxMessages(props.memoryProviderMaxMessages) }
             .retrievalAugmentor(retrievalAugmentor)
             .build()
-    }
 
-    override fun newAssistant(docsLocation: String): RagAssistant {
-        return instantiate(docsLocation)
     }
 
     private fun reRankingContentAggregator(): ReRankingContentAggregator? {
-        // Need a valid api key to use scoring model
-        /*
-        val scoringModel = CohereScoringModel.builder()
-            .apiKey(System.getenv("COHERE_API_KEY"))
-            .modelName("rerank-multilingual-v3.0")
-            .build();
-
-        return ReRankingContentAggregator.builder()
-                    .scoringModel(scoringModel)
-                    .minScore(0.8)
-                    .build()
-         */
-        return null
+        return scoringModel?.let {
+            ReRankingContentAggregator.builder()
+                .scoringModel(it)
+                .minScore(requireNotNull(props.scoringMinScore))
+                .build()
+        }
     }
 
     protected fun documentSplitter(): DocumentSplitter =
-        DocumentSplitters.recursive(300, 100)
+        DocumentSplitters.recursive(props.splitterMaxChars, props.splitterOverlapChars)
+
+    protected fun embeddingModel(embeddingModelName: String?) =
+        embeddingModelName?.let {
+            OllamaEmbeddingModel.builder()
+                .baseUrl(props.chatOllamaBaseUrl)
+                .modelName(it)
+                .timeout(Duration.of(5, ChronoUnit.MINUTES))
+                .httpClientBuilder(httpClientBuilder)
+                .build().also {
+                    logger().info("Initializing ollama embedding model $embeddingModelName")
+                }
+        }
+            ?: BgeSmallEnV15QuantizedEmbeddingModel().also {
+                logger().info("using default embedding model")
+            }
 }

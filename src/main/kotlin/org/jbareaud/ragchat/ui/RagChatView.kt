@@ -3,6 +3,8 @@ package org.jbareaud.ragchat.ui
 import com.vaadin.flow.component.ClickEvent
 import com.vaadin.flow.component.Text
 import com.vaadin.flow.component.button.Button
+import com.vaadin.flow.component.checkbox.Checkbox
+import com.vaadin.flow.component.combobox.ComboBox
 import com.vaadin.flow.component.dialog.Dialog
 import com.vaadin.flow.component.messages.MessageInput
 import com.vaadin.flow.component.messages.MessageInput.SubmitEvent
@@ -14,7 +16,8 @@ import com.vaadin.flow.router.PageTitle
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.theme.lumo.LumoUtility
 import jakarta.annotation.PostConstruct
-import org.jbareaud.ragchat.ai.ChatService
+import org.jbareaud.ragchat.ai.AssistantChatService
+import org.jbareaud.ragchat.ai.AssistantType
 import org.jbareaud.ragchat.logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.vaadin.firitin.components.messagelist.MarkdownMessage
@@ -26,10 +29,10 @@ import java.util.UUID
 @Route(value = "", layout = ChatMainLayout::class)
 class RagChatView: VerticalLayout() {
 
-    private var chatId: String = "" // use empty string as a marker for uninitialized rag chat
+    private var chatId: String? = null
     private val messageInput: MessageInput
     private val messageList: VerticalLayout
-    @Autowired lateinit var service: ChatService
+    @Autowired lateinit var service: AssistantChatService
 
     init {
         val newChatButton = Button("New Chat")
@@ -61,7 +64,7 @@ class RagChatView: VerticalLayout() {
             val question = MarkdownMessage(questionText, "You")
             question.addClassName("you")
 
-            if (chatId != "") {
+            if (chatId != null) {
                 val answer = MarkdownMessage("Assistant")
                 answer.element.executeJs("this.scrollIntoView()")
                 messageList.add(question)
@@ -82,7 +85,7 @@ class RagChatView: VerticalLayout() {
 
     private fun MarkdownMessage.appendChatResponseAsync(questionText: String) {
         val workerUI = ui.get()
-        service.streamNewMessage(chatId, questionText)
+        service.streamNewMessage(requireNotNull(chatId), questionText)
             .doOnError {
                 workerUI.access {
                     Notification.show("Error during message processing.")
@@ -113,6 +116,27 @@ class RagChatView: VerticalLayout() {
         val text = Text("Warning: import may take some time depending of the size of the knowledge base")
         dialogLayout.add(text)
 
+        val comboChatType = ComboBox("Chat Type", service.available())
+        comboChatType.value = AssistantType.SIMPLE
+        comboChatType.setWidthFull()
+        dialogLayout.add(comboChatType)
+
+        val comboChats = ComboBox("Chat models", service.models())
+        comboChats.value = service.models().firstOrNull { it.contains("qwen3") }
+        comboChats.setWidthFull()
+        dialogLayout.add(comboChats)
+
+        val comboEmbeddings = ComboBox("Embedding", service.embeddings())
+        comboEmbeddings.value = null
+        comboEmbeddings.setWidthFull()
+        dialogLayout.add(comboEmbeddings)
+
+        val checkReranker = Checkbox("Use reranker if possible", false)
+        if (!service.hasReranker()) {
+            checkReranker.isEnabled = false
+        }
+        dialogLayout.add(checkReranker)
+
         dialogLayout.setSizeFull()
         dialog.add(dialogLayout)
 
@@ -120,11 +144,21 @@ class RagChatView: VerticalLayout() {
             val location = field.value
             val file = File(location)
             if (file.isDirectory) {
-                chatId = UUID.randomUUID().toString()
-                messageList.removeAll()
-                focusMessageInput()
-                service.newChat(location)
-                Notification.show("Knowledge base processed, ready to chat")
+                try {
+                    service.newAssistant(
+                        type = comboChatType.value,
+                        chatModelName = comboChats.value,
+                        embeddingModelName = comboEmbeddings.value,
+                        useReranker = checkReranker.value,
+                        docsLocation = location
+                    )
+                    chatId = UUID.randomUUID().toString()
+                    messageList.removeAll()
+                    focusMessageInput()
+                    Notification.show("Knowledge base processed, ready to chat")
+                } catch (err: Exception) {
+                    Notification.show("Could not create new chat")
+                }
             } else {
                 val message = "Location of knowledge base is invalid"
                 logger().warn("$message: $location")
@@ -133,7 +167,7 @@ class RagChatView: VerticalLayout() {
             dialog.close()
         }
         val cancelButton = Button("Cancel") { _: ClickEvent<Button> ->
-            if (chatId == "")
+            if (chatId == null)
                 Notification.show("No knowledge base set, unable to chat")
             else
                 Notification.show("Canceled, keeping the previous knowledge base")

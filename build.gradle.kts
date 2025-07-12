@@ -28,6 +28,7 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("com.vaadin:vaadin-spring-boot-starter")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
+	implementation("jakarta.validation:jakarta.validation-api")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 
 	// vaadin extras
@@ -38,7 +39,6 @@ dependencies {
 	implementation("dev.langchain4j:langchain4j-spring-boot-starter:${property("langchain4jVersion")}")
 	implementation("dev.langchain4j:langchain4j-easy-rag:${property("langchain4jVersion")}")
 	implementation("dev.langchain4j:langchain4j-ollama-spring-boot-starter:${property("langchain4jVersion")}")
-	implementation("dev.langchain4j:langchain4j-cohere:${property("langchain4jVersion")}")
 	implementation("dev.langchain4j:langchain4j-onnx-scoring:${property("langchain4jVersion")}")
 
 	// Jackson
