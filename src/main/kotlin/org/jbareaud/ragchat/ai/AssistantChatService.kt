@@ -5,6 +5,7 @@ import dev.langchain4j.model.scoring.ScoringModel
 import org.jbareaud.ragchat.ai.provider.AssistantProvider
 import org.jbareaud.ragchat.ai.provider.RagAssistant
 import org.jbareaud.ragchat.logger
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Sinks
@@ -14,28 +15,25 @@ import reactor.core.publisher.Sinks
 class AssistantChatService(
     private val providers: List<AssistantProvider>,
     private val ollamaModels: OllamaModels,
-    private val scoringModel: ScoringModel? = null
+    private val scoringModel: ScoringModel? = null,
+    @Value("\${rag-chat.embedding-families}") private val embeddingFamilies:List<String>,
+    @Value("\${rag-chat.chat-families}") private val chatFamilies:List<String>,
 ) {
-
-    companion object {
-        private val embeddingModelFamilyNames = setOf("bert", "nomic-bert") // TODO exporter
-        private val chatModelFamilyNames = setOf("llama", "qwen2", "qwen3", "gemma3")  // TODO exporter
-    }
 
     private var assistant: RagAssistant? = null
 
-    private val listEmbeddings by lazy {
+    private val listModels by lazy {
         ollamaModels.availableModels().content()
     }
 
     fun available() = providers.map(AssistantProvider::type)
 
-    fun embeddings() = listEmbeddings
-        .filter { it.details.family in embeddingModelFamilyNames }
+    fun embeddings() = listModels
+        .filter { it.details.family in embeddingFamilies }
         .map { it.name }
 
-    fun models() = listEmbeddings
-        .filter { it.details.family in chatModelFamilyNames }
+    fun chatModels() = listModels
+        .filter { it.details.family in chatFamilies }
         .map { it.name }
 
     fun hasReranker() = scoringModel != null
@@ -47,7 +45,6 @@ class AssistantChatService(
         useReranker: Boolean,
         docsLocation: String
     ) {
-        // TODO use embeddingModelName
         if (!available().contains(type)) {
             throw AssistantException("$type chat type requested is not available")
         }

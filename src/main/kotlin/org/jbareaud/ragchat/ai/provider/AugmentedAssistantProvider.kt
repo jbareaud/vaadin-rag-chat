@@ -86,7 +86,9 @@ class AugmentedAssistantProvider(
             ReRankingContentAggregator.builder()
                 .scoringModel(it)
                 .minScore(requireNotNull(props.scoringMinScore))
-                .build()
+                .build().also {
+                    logger().info("Using provided reranker with min score ${props.scoringMinScore}")
+                }
         }
     }
 

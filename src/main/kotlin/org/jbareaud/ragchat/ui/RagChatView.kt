@@ -121,8 +121,8 @@ class RagChatView: VerticalLayout() {
         comboChatType.setWidthFull()
         dialogLayout.add(comboChatType)
 
-        val comboChats = ComboBox("Chat models", service.models())
-        comboChats.value = service.models().firstOrNull { it.contains("qwen3") }
+        val comboChats = ComboBox("Chat models", service.chatModels())
+        comboChats.value = service.chatModels().firstOrNull { it.contains("qwen3") }
         comboChats.setWidthFull()
         dialogLayout.add(comboChats)
 
