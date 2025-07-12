@@ -18,6 +18,7 @@ class AssistantChatService(
     private val scoringModel: ScoringModel? = null,
     @Value("\${rag-chat.embedding-families}") private val embeddingFamilies:List<String>,
     @Value("\${rag-chat.chat-families}") private val chatFamilies:List<String>,
+    @Value("\${rag-chat.default-chat-selection}") private val defaultChatSelection:List<String>,
 ) {
 
     private var assistant: RagAssistant? = null
@@ -26,17 +27,24 @@ class AssistantChatService(
         ollamaModels.availableModels().content()
     }
 
-    fun available() = providers.map(AssistantProvider::type)
+    fun available() = providers.map(AssistantProvider::type).sorted()
 
     fun embeddings() = listModels
         .filter { it.details.family in embeddingFamilies }
         .map { it.name }
+        .sorted()
 
     fun chatModels() = listModels
         .filter { it.details.family in chatFamilies }
         .map { it.name }
+        .sorted()
 
     fun hasReranker() = scoringModel != null
+
+    fun defaultChatModel() =
+        defaultChatSelection
+            .intersect(listModels.map { it.name }.toSet())
+            .firstOrNull()
 
     fun newAssistant(
         type:AssistantType,

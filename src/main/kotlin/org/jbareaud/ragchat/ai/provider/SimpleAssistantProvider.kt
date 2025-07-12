@@ -30,10 +30,10 @@ class SimpleAssistantProvider(
         docsLocation: String
     ): RagAssistant {
         if (embeddingModelName != null) {
-            logger().info("Usage of embedding model $embeddingModelName will be ignored in the case of a simple chat")
+            logger().info("Usage of embedding model $embeddingModelName will be ignored for a simple chat")
         }
         if (useReranker) {
-            logger().info("Usage of reranker will be ignored in the case of a simple chat (default used by lamgchain4j is bge-small-en-v15)")
+            logger().info("Usage of reranker will be ignored for a simple chat (default used by langchain4j should be bge-small-en-v15)")
         }
         val embeddingStore = InMemoryEmbeddingStore<TextSegment>()
         val contentRetriever = EmbeddingStoreContentRetriever.from(embeddingStore)
