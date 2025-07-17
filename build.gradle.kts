@@ -40,6 +40,7 @@ dependencies {
 	implementation("dev.langchain4j:langchain4j-easy-rag:${property("langchain4jVersion")}")
 	implementation("dev.langchain4j:langchain4j-ollama-spring-boot-starter:${property("langchain4jVersion")}")
 	implementation("dev.langchain4j:langchain4j-onnx-scoring:${property("langchain4jVersion")}")
+	implementation("dev.langchain4j:langchain4j-chroma:${property("langchain4jVersion")}")
 
 	// Jackson
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

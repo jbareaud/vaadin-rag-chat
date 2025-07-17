@@ -8,8 +8,10 @@ interface AssistantProvider {
 
     fun instantiateAssistant(
         chatModelName:String,
+        collectionName: String?,
+        createKnowledgeBase: Boolean,
         embeddingModelName:String?,
         useReranker: Boolean,
-        docsLocation: String
+        docsLocation: String?
     ): RagAssistant
 }

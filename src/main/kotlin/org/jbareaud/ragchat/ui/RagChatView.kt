@@ -1,24 +1,17 @@
 package org.jbareaud.ragchat.ui
 
-import com.vaadin.flow.component.ClickEvent
-import com.vaadin.flow.component.Text
 import com.vaadin.flow.component.button.Button
-import com.vaadin.flow.component.checkbox.Checkbox
-import com.vaadin.flow.component.combobox.ComboBox
-import com.vaadin.flow.component.dialog.Dialog
 import com.vaadin.flow.component.messages.MessageInput
 import com.vaadin.flow.component.messages.MessageInput.SubmitEvent
 import com.vaadin.flow.component.notification.Notification
 import com.vaadin.flow.component.orderedlayout.Scroller
 import com.vaadin.flow.component.orderedlayout.VerticalLayout
-import com.vaadin.flow.component.textfield.TextField
 import com.vaadin.flow.router.PageTitle
 import com.vaadin.flow.router.Route
 import com.vaadin.flow.theme.lumo.LumoUtility
 import jakarta.annotation.PostConstruct
 import org.jbareaud.ragchat.ai.AssistantChatService
 import org.jbareaud.ragchat.ai.AssistantType
-import org.jbareaud.ragchat.logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.vaadin.firitin.components.messagelist.MarkdownMessage
 import java.io.File
@@ -76,6 +69,7 @@ class RagChatView: VerticalLayout() {
         }
 
         add(newChatButton)
+
         val scroller = Scroller(messageList)
         scroller.setWidthFull()
         scroller.addClassName(LumoUtility.AlignContent.END)
@@ -104,81 +98,58 @@ class RagChatView: VerticalLayout() {
     }
 
     private fun openNewChatDialog() {
-        val dialog = Dialog()
-
-        dialog.headerTitle = "New RAG chat"
-
-        val dialogLayout = VerticalLayout()
-        val field = TextField("Knowledge base location", "Copy/paste here")
-        field.setWidthFull()
-        dialogLayout.add(field)
-
-        val text = Text("Warning: import may take some time depending of the size of the knowledge base")
-        dialogLayout.add(text)
-
-        val comboChatType = ComboBox("Chat Type", service.available())
-        comboChatType.value = AssistantType.SIMPLE
-        comboChatType.setWidthFull()
-        dialogLayout.add(comboChatType)
-
-        val comboChats = ComboBox("Chat models", service.chatModels())
-        comboChats.value = service.defaultChatModel()
-        comboChats.setWidthFull()
-        dialogLayout.add(comboChats)
-
-        val comboEmbeddings = ComboBox("Embedding", service.embeddings())
-        comboEmbeddings.value = null
-        comboEmbeddings.setWidthFull()
-        dialogLayout.add(comboEmbeddings)
-
-        val checkReranker = Checkbox("Use reranker if possible", false)
-        if (!service.hasReranker()) {
-            checkReranker.isEnabled = false
-        }
-        dialogLayout.add(checkReranker)
-
-        dialogLayout.setSizeFull()
-        dialog.add(dialogLayout)
-
-        val saveButton = Button("OK") { _: ClickEvent<Button> ->
-            val location = field.value
-            val file = File(location)
-            if (file.isDirectory) {
-                try {
-                    service.newAssistant(
-                        type = comboChatType.value,
-                        chatModelName = comboChats.value,
-                        embeddingModelName = comboEmbeddings.value,
-                        useReranker = checkReranker.value,
-                        docsLocation = location
-                    )
-                    chatId = UUID.randomUUID().toString()
-                    messageList.removeAll()
-                    focusMessageInput()
-                    Notification.show("Knowledge base processed, ready to chat")
-                } catch (err: Exception) {
-                    Notification.show("Could not create new chat")
-                }
-            } else {
-                val message = "Location of knowledge base is invalid"
-                logger().warn("$message: $location")
-                Notification.show(message)
-            }
-            dialog.close()
-        }
-        val cancelButton = Button("Cancel") { _: ClickEvent<Button> ->
-            if (chatId == null)
-                Notification.show("No knowledge base set, unable to chat")
-            else
-                Notification.show("Canceled, keeping the previous knowledge base")
-            dialog.close()
-        }
-        dialog.footer.add(cancelButton)
-        dialog.footer.add(saveButton)
-
-        add(dialog)
+        val dialog = NewChatDialog(
+            service = service,
+            createChatWithNewKB = createChatWithNewKB(),
+            createChatWithExistingKB = createChatWithExistingKB(),
+            cancelNewChat = {
+                if (chatId == null)
+                    Notification.show("No knowledge base set, unable to chat")
+                else
+                    Notification.show("Canceled, keeping the previous knowledge base")
+            })
         dialog.open()
     }
+
+    private fun createChatWithNewKB(): (type: AssistantType, docLocation: String, chatModelName: String, embeddingModelName: String, useReranker: Boolean) -> Unit =
+        { type, location, chatModelName, embeddingModelName, useReranker ->
+            val file = File(location)
+            if (file.isDirectory) {
+                val collectionName = location.split(File.separator).last()
+                service.newAssistant(
+                    type = type,
+                    collectionName = collectionName,
+                    createKnowledgeBase = true,
+                    chatModelName = chatModelName,
+                    embeddingModelName = embeddingModelName,
+                    useReranker = useReranker,
+                    docsLocation = location
+                )
+                chatId = UUID.randomUUID().toString()
+                messageList.removeAll()
+                focusMessageInput()
+                Notification.show("Knowledge base processed, ready to chat")
+            } else {
+                Notification.show("Knowledge base couldn't be created, doc location isn't valid")
+            }
+        }
+
+    private fun createChatWithExistingKB(): (type: AssistantType, collectionName: String, chatModelName: String, embeddingModelName: String, useReranker: Boolean) -> Unit =
+        { type, collectionName, chatModelName, embeddingModelName, useReranker ->
+            service.newAssistant(
+                type = type,
+                collectionName = collectionName,
+                createKnowledgeBase = false,
+                chatModelName = chatModelName,
+                embeddingModelName = embeddingModelName,
+                useReranker = useReranker,
+                docsLocation = null
+            )
+            chatId = UUID.randomUUID().toString()
+            messageList.removeAll()
+            focusMessageInput()
+            Notification.show("Using existing knowledge base processed, ready to chat")
+        }
 
     @PostConstruct
     fun initDefaultChat() {
