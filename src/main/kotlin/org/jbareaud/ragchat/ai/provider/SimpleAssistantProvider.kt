@@ -35,7 +35,7 @@ class SimpleAssistantProvider(
         useReranker: Boolean,
         docsLocation: String?
     ): RagAssistant {
-        checkParameters(docsLocation, createKnowledgeBase, collectionName, embeddingModelName, useReranker)
+        checkParameters(docsLocation, embeddingModelName, useReranker)
         val embeddingStore = embeddingStore(collectionName)
         val contentRetriever = EmbeddingStoreContentRetriever.from(embeddingStore)
         if (createKnowledgeBase) {
@@ -51,8 +51,6 @@ class SimpleAssistantProvider(
 
     private fun checkParameters(
         docsLocation: String?,
-        createKnowledgeBase: Boolean,
-        collectionName: String?,
         embeddingModelName: String?,
         useReranker: Boolean
     ) {
@@ -62,13 +60,6 @@ class SimpleAssistantProvider(
         if (useReranker) {
             logger().warn("Usage of reranker will be ignored for a simple chat (default used by langchain4j should be bge-small-en-v15)")
         }
-        /* TODO
-        if (!createKnowledgeBase) {
-            val message = "Can't use existing chroma store for a simple chat"
-            logger().error(message)
-            throw RuntimeException(message)
-        }
-         */
         if (docsLocation == null) {
             val message = "Need a document location for simple chat"
             logger().error(message)
