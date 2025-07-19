@@ -49,30 +49,23 @@ class ChromaClient(props: ConfigProperties) {
         api = retrofit.create(ChromaPartialApi::class.java)
     }
 
-    private fun Duration?.orDefault() = this ?: Duration.ofMillis(60000)
-
     fun collectionNames(): List<String>? {
-        return try {
-            request()?.map { it.name }
-        } catch (err: Exception) {
-            logger().error("[ChromaClient] retrofit call in error : $err")
-            null
-        }
-    }
-
-    private fun request(): List<Collection>? {
         try {
             val response: retrofit2.Response<List<Collection>> = api.collections().execute()
             if (response.isSuccessful) {
-                return response.body()
+                return response.body()?.map { it.name }
             } else {
                 throw RuntimeException("[ChromaClient] retrofit call error code ${response.code()}")
             }
         } catch (err: IOException) {
-            throw RuntimeException(err)
+            val message = "[ChromaClient] retrofit call in error"
+            logger().error("$message : $err")
+            throw RuntimeException(message, err)
         }
     }
 }
+
+private fun Duration?.orDefault() = this ?: Duration.ofMillis(60000)
 
 data class Collection(
     val id: String? = null,

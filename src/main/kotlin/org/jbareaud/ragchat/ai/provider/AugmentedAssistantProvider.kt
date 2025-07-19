@@ -16,8 +16,8 @@ import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever
 import dev.langchain4j.service.AiServices
 import dev.langchain4j.store.embedding.EmbeddingStore
 import dev.langchain4j.store.embedding.EmbeddingStoreIngestor
-import org.jbareaud.ragchat.ai.ConfigProperties
 import org.jbareaud.ragchat.ai.AssistantType
+import org.jbareaud.ragchat.ai.ConfigProperties
 import org.jbareaud.ragchat.ai.chroma.ChromaClient
 import org.jbareaud.ragchat.logger
 import org.springframework.stereotype.Service
@@ -109,6 +109,7 @@ class AugmentedAssistantProvider(
         return scoringModel?.let {
             ReRankingContentAggregator.builder()
                 .scoringModel(it)
+                .querySelector(ReRankingContentAggregator.DEFAULT_QUERY_SELECTOR)
                 .minScore(requireNotNull(props.scoringMinScore))
                 .build().also {
                     logger().info("Using provided reranker with min score ${props.scoringMinScore}")

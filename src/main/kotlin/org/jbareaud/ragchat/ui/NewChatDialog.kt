@@ -7,6 +7,7 @@ import com.vaadin.flow.component.button.Button
 import com.vaadin.flow.component.checkbox.Checkbox
 import com.vaadin.flow.component.combobox.ComboBox
 import com.vaadin.flow.component.dialog.Dialog
+import com.vaadin.flow.component.notification.Notification
 import com.vaadin.flow.component.orderedlayout.VerticalLayout
 import com.vaadin.flow.component.tabs.Tab
 import com.vaadin.flow.component.tabs.TabSheet
@@ -19,8 +20,7 @@ import java.io.File
 
 class NewChatDialog(
     private val service: AssistantChatService,
-    private val createChatWithNewKB: (type:AssistantType, docLocation: String, chatModelName: String, embeddingModelName: String, useReranker: Boolean) -> Unit,
-    private val createChatWithExistingKB: (type:AssistantType, collectionName: String, chatModelName: String, embeddingModelName: String, useReranker: Boolean) -> Unit,
+    private val createNewChat: () -> Unit,
     private val cancelNewChat: () -> Unit,
 ): Dialog() {
 
@@ -80,28 +80,34 @@ class NewChatDialog(
 
     private fun addFooterContent() {
         val saveButton = Button("OK") { _: ClickEvent<Button> ->
-            when (tabSheet.selectedTab) {
-                tabCreate -> {
-                    createChatWithNewKB(
-                        comboChatType.value,
-                        docLocationTextField.value,
-                        comboChats.value,
-                        comboEmbeddings.value,
-                        checkReranker.value,
-                    )
+            try {
+                when (tabSheet.selectedTab) {
+                    tabCreate -> {
+                        createChatWithNewKB(
+                            comboChatType.value,
+                            docLocationTextField.value,
+                            comboChats.value,
+                            comboEmbeddings.value,
+                            checkReranker.value,
+                        )
+                        createNewChat()
+                    }
+                    tabSelect -> {
+                        createChatWithExistingKB(
+                            comboChatType.value,
+                            comboKnowledgeBases.value,
+                            comboChats.value,
+                            comboEmbeddings.value,
+                            checkReranker.value,
+                        )
+                        createNewChat()
+                    }
+                    else -> {
+                        logger().error("Impossible to create new chat, unknown NewChatDialog case")
+                    }
                 }
-                tabSelect -> {
-                    createChatWithExistingKB(
-                        comboChatType.value,
-                        comboKnowledgeBases.value,
-                        comboChats.value,
-                        comboEmbeddings.value,
-                        checkReranker.value,
-                    )
-                }
-                else -> {
-                    logger().error("Impossible to create new chat, unknown NewChatDialog case")
-                }
+            } catch (err: Throwable) {
+                Notification.show("There was an error during the creation of the new chat")
             }
             close()
         }
@@ -111,6 +117,36 @@ class NewChatDialog(
         }
         footer.add(cancelButton)
         footer.add(saveButton)
+    }
+
+    private fun createChatWithNewKB(type: AssistantType, location: String, chatModelName: String, embeddingModelName: String, useReranker: Boolean) {
+        val file = File(location)
+        if (file.isDirectory) {
+            val collectionName = location.split(File.separator).last()
+            service.newAssistant(
+                type = type,
+                collectionName = collectionName,
+                createKnowledgeBase = true,
+                chatModelName = chatModelName,
+                embeddingModelName = embeddingModelName,
+                useReranker = useReranker,
+                docsLocation = location
+            )
+        } else {
+            Notification.show("Knowledge base couldn't be created, doc location isn't valid")
+        }
+    }
+
+    private fun createChatWithExistingKB(type: AssistantType, collectionName: String, chatModelName: String, embeddingModelName: String, useReranker: Boolean) {
+        service.newAssistant(
+            type = type,
+            collectionName = collectionName,
+            createKnowledgeBase = false,
+            chatModelName = chatModelName,
+            embeddingModelName = embeddingModelName,
+            useReranker = useReranker,
+            docsLocation = null
+        )
     }
 
     private fun tabCreate(): Component {

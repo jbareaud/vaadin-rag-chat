@@ -100,8 +100,12 @@ class RagChatView: VerticalLayout() {
     private fun openNewChatDialog() {
         val dialog = NewChatDialog(
             service = service,
-            createChatWithNewKB = createChatWithNewKB(),
-            createChatWithExistingKB = createChatWithExistingKB(),
+            createNewChat = {
+                chatId = UUID.randomUUID().toString()
+                messageList.removeAll()
+                focusMessageInput()
+                Notification.show("Knowledge base processed, ready to chat")
+            },
             cancelNewChat = {
                 if (chatId == null)
                     Notification.show("No knowledge base set, unable to chat")
@@ -110,46 +114,6 @@ class RagChatView: VerticalLayout() {
             })
         dialog.open()
     }
-
-    private fun createChatWithNewKB(): (type: AssistantType, docLocation: String, chatModelName: String, embeddingModelName: String, useReranker: Boolean) -> Unit =
-        { type, location, chatModelName, embeddingModelName, useReranker ->
-            val file = File(location)
-            if (file.isDirectory) {
-                val collectionName = location.split(File.separator).last()
-                service.newAssistant(
-                    type = type,
-                    collectionName = collectionName,
-                    createKnowledgeBase = true,
-                    chatModelName = chatModelName,
-                    embeddingModelName = embeddingModelName,
-                    useReranker = useReranker,
-                    docsLocation = location
-                )
-                chatId = UUID.randomUUID().toString()
-                messageList.removeAll()
-                focusMessageInput()
-                Notification.show("Knowledge base processed, ready to chat")
-            } else {
-                Notification.show("Knowledge base couldn't be created, doc location isn't valid")
-            }
-        }
-
-    private fun createChatWithExistingKB(): (type: AssistantType, collectionName: String, chatModelName: String, embeddingModelName: String, useReranker: Boolean) -> Unit =
-        { type, collectionName, chatModelName, embeddingModelName, useReranker ->
-            service.newAssistant(
-                type = type,
-                collectionName = collectionName,
-                createKnowledgeBase = false,
-                chatModelName = chatModelName,
-                embeddingModelName = embeddingModelName,
-                useReranker = useReranker,
-                docsLocation = null
-            )
-            chatId = UUID.randomUUID().toString()
-            messageList.removeAll()
-            focusMessageInput()
-            Notification.show("Using existing knowledge base processed, ready to chat")
-        }
 
     @PostConstruct
     fun initDefaultChat() {
