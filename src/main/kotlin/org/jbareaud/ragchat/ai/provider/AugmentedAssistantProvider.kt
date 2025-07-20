@@ -105,7 +105,7 @@ class AugmentedAssistantProvider(
         }
     }
 
-    private fun reRankingContentAggregator(): ReRankingContentAggregator? {
+    protected fun reRankingContentAggregator(): ReRankingContentAggregator? {
         return scoringModel?.let {
             ReRankingContentAggregator.builder()
                 .scoringModel(it)

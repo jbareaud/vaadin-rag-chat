@@ -6,17 +6,22 @@ import java.time.Duration
 
 @ConfigurationProperties(prefix = "rag-chat")
 data class ConfigProperties @ConstructorBinding constructor(
+
     val chatOllamaBaseUrl: String?  = null,
     val chatTemperature: Double,
     val chatTopK: Int,
-    val scoringEnabled: Boolean,
-    val scoringPathToModel: String? = null,
-    val scoringPathToTokenizer: String? = null,
+
+    val scoringType: String?,
+    val onnxScoringPathToModel: String? = null,
+    val onnxScoringPathToTokenizer: String? = null,
+    val llmScoringModelName: String? = null,
     val scoringMinScore: Double? = null,
+
     val contentRetrieverMaxResults: Int,
     val memoryProviderMaxMessages: Int,
     val splitterMaxChars: Int,
     val splitterOverlapChars: Int,
+
     val chromaEnabled: Boolean,
     val chromaBaseUrl: String?,
     val chromaClientTimeout: Duration?,
