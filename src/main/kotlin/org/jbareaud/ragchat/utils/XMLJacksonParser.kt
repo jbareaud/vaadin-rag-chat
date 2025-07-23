@@ -29,6 +29,7 @@ private fun JsonNode.readDocument(): List<Page> {
 private fun JsonNode.parseXmlPage(): Page {
     val props = this.properties()
     val title = props.firstOrNull { it.key == XML_TITLE }?.value?.toString()
+        ?.replace("\'", "")
         ?: throw toError(XML_TITLE)
     val id = props.firstOrNull { it.key == XML_ID }?.value?.toString()
         ?: throw toError(XML_ID)

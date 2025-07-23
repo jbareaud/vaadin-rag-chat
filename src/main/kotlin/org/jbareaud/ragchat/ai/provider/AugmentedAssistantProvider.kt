@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 
+
 @Service
 class AugmentedAssistantProvider(
     props: ConfigProperties,
