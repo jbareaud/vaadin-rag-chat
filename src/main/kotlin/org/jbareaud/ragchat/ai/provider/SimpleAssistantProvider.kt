@@ -69,22 +69,22 @@ class SimpleAssistantProvider(
 
     protected fun streamingChatModel(chatModelName: String): StreamingChatModel =
         OllamaStreamingChatModel.builder()
-            .baseUrl(props.chatOllamaBaseUrl)
+            .baseUrl(requireNotNull(props.ollama?.baseUrl))
             .modelName(chatModelName)
-            .temperature(props.chatTemperature)
-            .topK(props.chatTopK)
+            .temperature(requireNotNull(props.ollama?.temperature))
+            .topK(requireNotNull(props.ollama?.topK))
             .httpClientBuilder(httpClientBuilder)
             .build().also {
                 logger().info("Initializing Ollama chat with $chatModelName")
             }
 
     protected fun embeddingStore(collectionName: String?): EmbeddingStore<TextSegment> {
-        return if (props.chromaEnabled) {
+        return if (props.chroma != null) {
             try {
                 ChromaEmbeddingStore
                     .builder()
-                    .baseUrl(props.chromaBaseUrl)
-                    .timeout(props.chromaStoreTimeout)
+                    .baseUrl(props.chroma?.baseUrl)
+                    .timeout(props.chroma?.storeTimeout)
                     .collectionName(collectionName)
                     //.logRequests(true)
                     //.logResponses(true)

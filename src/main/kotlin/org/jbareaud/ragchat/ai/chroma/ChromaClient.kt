@@ -28,10 +28,10 @@ class ChromaClient(props: ConfigProperties) {
 
     init {
         val httpClientBuilder = OkHttpClient.Builder()
-            .callTimeout(props.chromaClientTimeout.orDefault())
-            .connectTimeout(props.chromaClientTimeout.orDefault())
-            .readTimeout(props.chromaClientTimeout.orDefault())
-            .writeTimeout(props.chromaClientTimeout.orDefault())
+            .callTimeout(props.chroma?.clientTimeout.orDefault())
+            .connectTimeout(props.chroma?.clientTimeout.orDefault())
+            .readTimeout(props.chroma?.clientTimeout.orDefault())
+            .writeTimeout(props.chroma?.clientTimeout.orDefault())
 
         val objectMapper = ObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
@@ -41,7 +41,7 @@ class ChromaClient(props: ConfigProperties) {
             .registerModules(KotlinModule.Builder().build())
 
         val retrofit = Retrofit.Builder()
-            .baseUrl(Utils.ensureTrailingForwardSlash(props.chromaBaseUrl))
+            .baseUrl(Utils.ensureTrailingForwardSlash(props.chroma?.baseUrl))
             .client(httpClientBuilder.build())
             .addConverterFactory(JacksonConverterFactory.create(objectMapper))
             .build()

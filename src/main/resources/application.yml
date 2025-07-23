@@ -1,0 +1,46 @@
+spring.application.name: ragchat
+
+vaadin:
+  launch-browser: true
+  allowed-packages: org.jbareaud.ragchat
+
+rag-chat:
+  content-retriever-max-results: 6
+  memory-provider-max-messages: 10
+  embedding-families: bert,nomic-bert
+  chat-families: llama,qwen2,qwen3,gemma3
+  default-chat-selection: qwen3:14b,mistral:latest,llama3.1:latest
+  splitter:
+    max-chars: 2000
+    overlap-chars: 200
+  ollama:
+    base-url: http://localhost:11434
+    temperature: 0.3
+    top-k: 5
+  scoring:
+    min-score: 0.6
+    list:
+      -
+        type: ONNX
+        name: mxbai-rerank-xsmall-v1
+        path-to-model: D:\\LLM\\models\\ONNX\\mxbai-rerank-xsmall-v1\\model.onnx
+        path-to-tokenizer: D:\\LLM\\models\\ONNX\\mxbai-rerank-xsmall-v1\\tokenizer.json
+      -
+        type: ONNX
+        name: ms-marco-MiniLM-L6-v2
+        path-to-model: D:\\LLM\\models\\ONNX\\ms-marco-MiniLM-L6-v2\\model.onnx
+        path-to-tokenizer: D:\\LLM\\models\\ONNX\\ms-marco-MiniLM-L6-v2\\tokenizer.json
+      -
+        type: LLM
+        name: LLM mistral-nemo
+        model-name: mistral-nemo:latest
+  chroma:
+    base-url: http://localhost:8000
+    client-timeout: 10s
+    store-timeout: 60s
+
+logging.level:
+  dev.langchain4j: DEBUG
+  org.jbareaud.ragchat: DEBUG
+  com.vaadin.flow: WARN
+  org.atmosphere.cpr: WARN

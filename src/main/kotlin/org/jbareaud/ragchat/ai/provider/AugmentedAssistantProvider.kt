@@ -9,7 +9,6 @@ import dev.langchain4j.memory.chat.MessageWindowChatMemory
 import dev.langchain4j.model.embedding.DimensionAwareEmbeddingModel
 import dev.langchain4j.model.embedding.onnx.bgesmallenv15q.BgeSmallEnV15QuantizedEmbeddingModel
 import dev.langchain4j.model.ollama.OllamaEmbeddingModel
-import dev.langchain4j.model.scoring.ScoringModel
 import dev.langchain4j.rag.DefaultRetrievalAugmentor
 import dev.langchain4j.rag.content.aggregator.ReRankingContentAggregator
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever
@@ -19,6 +18,7 @@ import dev.langchain4j.store.embedding.EmbeddingStoreIngestor
 import org.jbareaud.ragchat.ai.AssistantType
 import org.jbareaud.ragchat.ai.ConfigProperties
 import org.jbareaud.ragchat.ai.chroma.ChromaClient
+import org.jbareaud.ragchat.ai.reranker.ScoringModelProvider
 import org.jbareaud.ragchat.logger
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -30,7 +30,8 @@ class AugmentedAssistantProvider(
     props: ConfigProperties,
     httpClientBuilder: HttpClientBuilder,
     client: ChromaClient? = null,
-    private val scoringModel: ScoringModel? = null,
+    //private val scoringModel: ScoringModel? = null,
+    private val scoringModelProvider: ScoringModelProvider,
 ): SimpleAssistantProvider(props, httpClientBuilder, client) {
 
     override fun type() = AssistantType.AUGMENTED
@@ -107,24 +108,24 @@ class AugmentedAssistantProvider(
     }
 
     protected fun reRankingContentAggregator(): ReRankingContentAggregator? {
-        return scoringModel?.let {
+        return scoringModelProvider.provide()?.let { scoringModel ->
             ReRankingContentAggregator.builder()
-                .scoringModel(it)
+                .scoringModel(scoringModel)
                 .querySelector(ReRankingContentAggregator.DEFAULT_QUERY_SELECTOR)
-                .minScore(requireNotNull(props.scoringMinScore))
+                .minScore(requireNotNull(props.scoring?.minScore))
                 .build().also {
-                    logger().info("Using provided reranker with min score ${props.scoringMinScore}")
+                    logger().info("Using reranker with min score ${props.scoring?.minScore}")
                 }
         }
     }
 
     protected fun documentSplitter(): DocumentSplitter =
-        DocumentSplitters.recursive(props.splitterMaxChars, props.splitterOverlapChars)
+        DocumentSplitters.recursive(requireNotNull(props.splitter?.maxChars), requireNotNull(props.splitter?.overlapChars))
 
     protected fun embeddingModel(embeddingModelName: String?) =
         embeddingModelName?.let {
             OllamaEmbeddingModel.builder()
-                .baseUrl(props.chatOllamaBaseUrl)
+                .baseUrl(requireNotNull(props.ollama?.baseUrl))
                 .modelName(it)
                 .timeout(Duration.of(5, ChronoUnit.MINUTES))
                 .httpClientBuilder(httpClientBuilder)
