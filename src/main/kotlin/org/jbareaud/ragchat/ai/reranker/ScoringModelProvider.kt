@@ -16,7 +16,7 @@ class ScoringModelProvider(props: ConfigProperties) {
                 ScoringType.LLM ->  OllamaScoringModel.builder()
                     .baseUrl(requireNotNull(props.ollama?.baseUrl))
                     .modelName(requireNotNull(item.modelName))
-                    .temperature(0.1)
+                    .temperature(requireNotNull(item.temperature))
                     .build()
             }.also {
                 logger().info("Initialization of scoring model ${item.name} for first usage")

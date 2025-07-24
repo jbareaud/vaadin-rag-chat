@@ -25,7 +25,8 @@ class AssistantConfig(private val properties: ConfigProperties) {
     fun chromaClient(props: ConfigProperties): ChromaClient? =
         props.chroma?.let {
             try {
-                ChromaClient(props).also {
+                ChromaClient(props)
+                .also {
                     it.collectionNames()
                 }.also {
                     logger().info("Initialized chroma client")

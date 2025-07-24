@@ -34,6 +34,7 @@ rag-chat:
         type: LLM
         name: LLM mistral-nemo
         model-name: mistral-nemo:latest
+        temperature: 0.1
   chroma:
     base-url: http://localhost:8000
     client-timeout: 10s

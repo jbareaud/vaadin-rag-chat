@@ -43,5 +43,6 @@ data class ScoringItemProperties(
     val pathToModel: String? = null,
     val pathToTokenizer: String? = null,
     val modelName: String? = null,
+    val temperature: Double? = null,
 )
 
