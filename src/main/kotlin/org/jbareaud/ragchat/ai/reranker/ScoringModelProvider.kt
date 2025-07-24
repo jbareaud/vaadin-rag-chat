@@ -26,7 +26,7 @@ class ScoringModelProvider(props: ConfigProperties) {
 
     fun availables() = models.keys.toList()
 
-    fun provide(name: String? = "mxbai-rerank-xsmall-v1") = models[name]?.value
+    fun provide(name: String) = models[name]?.value
 
 }
 
