@@ -3,7 +3,10 @@ package org.jbareaud.ragchat.utils
 private const val PAGENAME_MARKER = "{{PAGENAME}}"
 
 fun convertWikitextToMarkdown(input: String, title: String): String {
-    var output = input
+    var output = buildString {
+        append("# $title\n\n")
+        append(input)
+    }
 
     // Replace {{PAGENAME}} marker
     output = output.replace(PAGENAME_MARKER, title)

@@ -53,7 +53,10 @@ class MediawikiDocumentSplitter(
 
 private fun Page.toMarkdownText() =
     if (redirect != null) {
-        "For more information about $title, see the article for $redirect"
+        buildString {
+            append("# $title\n\n")
+            append("For more information about $title, see the article for $redirect")
+        }
     } else {
         convertWikitextToMarkdown(text, title)
     }
