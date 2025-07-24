@@ -29,7 +29,8 @@ class NewChatDialog(
     private lateinit var tabSelect: Tab
     private lateinit var comboChatType: ComboBox<AssistantType>
     private lateinit var comboChats: ComboBox<String>
-    private lateinit var checkReranker: Checkbox
+    //private lateinit var checkReranker: Checkbox
+    private lateinit var comboRerankers: ComboBox<String>
     private lateinit var comboEmbeddings: ComboBox<String>
     private lateinit var comboKnowledgeBases: ComboBox<String>
     private lateinit var docLocationTextField: TextField
@@ -47,7 +48,7 @@ class NewChatDialog(
         val dialogLayout = VerticalLayout()
         add(dialogLayout)
 
-        comboChatType = ComboBox("Chat Type", service.types())
+        comboChatType = ComboBox("Chat Type", service.chatTypes())
         comboChatType.value = AssistantType.SIMPLE
         comboChatType.setWidthFull()
         dialogLayout.add(comboChatType)
@@ -65,17 +66,15 @@ class NewChatDialog(
         comboChats.setWidthFull()
         dialogLayout.add(comboChats)
 
-        comboEmbeddings = ComboBox("Embedding", service.embeddings())
+        comboEmbeddings = ComboBox("Embedding", service.embeddingModels())
         comboEmbeddings.value = null
         comboEmbeddings.setWidthFull()
         dialogLayout.add(comboEmbeddings)
 
-
-        checkReranker = Checkbox("Use reranker if possible", false)
-        if (!service.hasReranker()) {
-            checkReranker.isEnabled = false
-        }
-        dialogLayout.add(checkReranker)
+        comboRerankers = ComboBox("Reranker", service.rerankerModels())
+        comboRerankers.value = null
+        comboRerankers.setWidthFull()
+        dialogLayout.add(comboRerankers)
     }
 
     private fun addFooterContent() {
@@ -87,8 +86,8 @@ class NewChatDialog(
                             comboChatType.value,
                             docLocationTextField.value,
                             comboChats.value,
-                            comboEmbeddings.value,
-                            checkReranker.value,
+                            comboEmbeddings.value.sanitize(),
+                            comboRerankers.value.sanitize(),
                         )
                         createNewChat()
                     }
@@ -97,8 +96,8 @@ class NewChatDialog(
                             comboChatType.value,
                             comboKnowledgeBases.value,
                             comboChats.value,
-                            comboEmbeddings.value,
-                            checkReranker.value,
+                            comboEmbeddings.value.sanitize(),
+                            comboRerankers.value.sanitize(),
                         )
                         createNewChat()
                     }
@@ -119,7 +118,7 @@ class NewChatDialog(
         footer.add(saveButton)
     }
 
-    private fun createChatWithNewKB(type: AssistantType, location: String, chatModelName: String, embeddingModelName: String, useReranker: Boolean) {
+    private fun createChatWithNewKB(type: AssistantType, location: String, chatModelName: String, embeddingModelName: String?, rerankerModelName: String?) {
         val file = File(location)
         if (file.isDirectory) {
             val collectionName = location.split(File.separator).last()
@@ -129,7 +128,7 @@ class NewChatDialog(
                 createKnowledgeBase = true,
                 chatModelName = chatModelName,
                 embeddingModelName = embeddingModelName,
-                useReranker = useReranker,
+                rerankerModelName = rerankerModelName,
                 docsLocation = location
             )
         } else {
@@ -137,14 +136,14 @@ class NewChatDialog(
         }
     }
 
-    private fun createChatWithExistingKB(type: AssistantType, collectionName: String, chatModelName: String, embeddingModelName: String, useReranker: Boolean) {
+    private fun createChatWithExistingKB(type: AssistantType, collectionName: String, chatModelName: String, embeddingModelName: String?, rerankerModelName: String?) {
         service.newAssistant(
             type = type,
             collectionName = collectionName,
             createKnowledgeBase = false,
             chatModelName = chatModelName,
             embeddingModelName = embeddingModelName,
-            useReranker = useReranker,
+            rerankerModelName = rerankerModelName,
             docsLocation = null
         )
     }
@@ -190,3 +189,5 @@ private fun textCollectionNameMessage(value: String?) =
             value.split(File.separator).last()
         }
     }"
+
+private fun String?.sanitize(): String? = this?.ifBlank { null }

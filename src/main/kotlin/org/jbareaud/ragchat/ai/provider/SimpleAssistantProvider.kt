@@ -32,10 +32,10 @@ class SimpleAssistantProvider(
         collectionName: String?,
         createKnowledgeBase: Boolean,
         embeddingModelName: String?,
-        useReranker: Boolean,
+        rerankerModelName: String?,
         docsLocation: String?
     ): RagAssistant {
-        checkParameters(docsLocation, embeddingModelName, useReranker)
+        checkParameters(docsLocation, embeddingModelName, rerankerModelName)
         val embeddingStore = embeddingStore(collectionName)
         val contentRetriever = EmbeddingStoreContentRetriever.from(embeddingStore)
         if (createKnowledgeBase) {
@@ -52,12 +52,12 @@ class SimpleAssistantProvider(
     private fun checkParameters(
         docsLocation: String?,
         embeddingModelName: String?,
-        useReranker: Boolean
+        rerankerModelName: String?
     ) {
         if (embeddingModelName != null) {
             logger().warn("Usage of embedding model $embeddingModelName will be ignored for a simple chat")
         }
-        if (useReranker) {
+        if (rerankerModelName != null) {
             logger().warn("Usage of reranker will be ignored for a simple chat (default used by langchain4j should be bge-small-en-v15)")
         }
         if (docsLocation == null) {

@@ -2,11 +2,11 @@ package org.jbareaud.ragchat.ai
 
 import dev.langchain4j.model.ollama.OllamaModel
 import dev.langchain4j.model.ollama.OllamaModels
-import dev.langchain4j.model.scoring.ScoringModel
 import dev.langchain4j.service.TokenStream
 import org.jbareaud.ragchat.ai.provider.AssistantProvider
 import org.jbareaud.ragchat.ai.provider.RagAssistant
 import org.jbareaud.ragchat.ai.chroma.ChromaClient
+import org.jbareaud.ragchat.ai.reranker.ScoringModelProvider
 import org.jbareaud.ragchat.logger
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -18,7 +18,7 @@ import reactor.core.publisher.Sinks
 class AssistantChatService(
     private val providers: List<AssistantProvider>,
     private val ollamaModels: OllamaModels,
-    private val scoringModel: ScoringModel?,
+    private val scoringModelProvider: ScoringModelProvider,
     private val chromaClient: ChromaClient?,
     @Value("\${rag-chat.embedding-families}") private val embeddingFamilies:List<String>,
     @Value("\${rag-chat.chat-families}") private val chatFamilies:List<String>,
@@ -35,13 +35,13 @@ class AssistantChatService(
         ollamaModels.availableModels().content()
     }
 
-    fun types() = providers.map(AssistantProvider::type).sorted()
+    fun chatTypes() = providers.map(AssistantProvider::type).sorted()
 
-    fun embeddings() = listModels.toNameList(embeddingFamilies)
+    fun embeddingModels() = listModels.toNameList(embeddingFamilies)
 
     fun chatModels() = listModels.toNameList(chatFamilies)
 
-    fun hasReranker() = scoringModel != null
+    fun rerankerModels() =  scoringModelProvider.availables()
 
     fun defaultChatModel() =
         defaultChatSelection
@@ -56,7 +56,7 @@ class AssistantChatService(
         collectionName: String?,
         createKnowledgeBase: Boolean,
         embeddingModelName: String?,
-        useReranker: Boolean,
+        rerankerModelName: String?,
         docsLocation: String?
     ) {
         checkAssistantType(type)
@@ -68,14 +68,14 @@ class AssistantChatService(
                 collectionName = collectionName,
                 createKnowledgeBase = createKnowledgeBase,
                 embeddingModelName = embeddingModelName,
-                useReranker = useReranker,
-                docsLocation = docsLocation
+                rerankerModelName = rerankerModelName,
+                docsLocation = docsLocation,
             )
         logger().info("Finished initializing new assistant")
     }
 
     private fun checkAssistantType(type: AssistantType) {
-        if (type !in types()) {
+        if (type !in chatTypes()) {
             val message = "$type chat type requested is not available"
             logger().error(message)
             throw AssistantException(message)

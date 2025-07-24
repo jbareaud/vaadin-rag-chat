@@ -11,7 +11,7 @@ interface AssistantProvider {
         collectionName: String?,
         createKnowledgeBase: Boolean,
         embeddingModelName:String?,
-        useReranker: Boolean,
+        rerankerModelName: String?,
         docsLocation: String?
     ): RagAssistant
 }

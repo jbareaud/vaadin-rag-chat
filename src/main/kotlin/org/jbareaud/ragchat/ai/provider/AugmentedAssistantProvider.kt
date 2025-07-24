@@ -30,7 +30,6 @@ class AugmentedAssistantProvider(
     props: ConfigProperties,
     httpClientBuilder: HttpClientBuilder,
     client: ChromaClient? = null,
-    //private val scoringModel: ScoringModel? = null,
     private val scoringModelProvider: ScoringModelProvider,
 ): SimpleAssistantProvider(props, httpClientBuilder, client) {
 
@@ -41,7 +40,7 @@ class AugmentedAssistantProvider(
         collectionName: String?,
         createKnowledgeBase: Boolean,
         embeddingModelName: String?,
-        useReranker: Boolean,
+        rerankerModelName: String?,
         docsLocation: String?
     ): RagAssistant {
 
@@ -64,7 +63,7 @@ class AugmentedAssistantProvider(
         val retrievalAugmentor = DefaultRetrievalAugmentor.builder()
             .contentRetriever(contentRetriever)
             .apply {
-                if (useReranker) reRankingContentAggregator()?.let { contentAggregator(it) }
+                if (rerankerModelName != null) reRankingContentAggregator(rerankerModelName)?.let { contentAggregator(it) }
             }
             .build()
 
@@ -107,8 +106,8 @@ class AugmentedAssistantProvider(
         }
     }
 
-    protected fun reRankingContentAggregator(): ReRankingContentAggregator? {
-        return scoringModelProvider.provide()?.let { scoringModel ->
+    protected fun reRankingContentAggregator(rerankerModelName: String): ReRankingContentAggregator? {
+        return scoringModelProvider.provide(rerankerModelName)?.let { scoringModel ->
             ReRankingContentAggregator.builder()
                 .scoringModel(scoringModel)
                 .querySelector(ReRankingContentAggregator.DEFAULT_QUERY_SELECTOR)
