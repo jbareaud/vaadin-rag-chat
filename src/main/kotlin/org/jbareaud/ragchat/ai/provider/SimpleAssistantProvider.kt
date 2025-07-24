@@ -79,11 +79,10 @@ class SimpleAssistantProvider(
             }
 
     protected fun embeddingStore(collectionName: String?): EmbeddingStore<TextSegment> {
-        return if (props.chroma != null) {
+        val store = props.chroma?.baseUrl?.let { baseUrl ->
             try {
-                ChromaEmbeddingStore
-                    .builder()
-                    .baseUrl(props.chroma?.baseUrl)
+                ChromaEmbeddingStore.builder()
+                    .baseUrl(baseUrl)
                     .timeout(props.chroma?.storeTimeout)
                     .collectionName(collectionName)
                     //.logRequests(true)
@@ -91,13 +90,15 @@ class SimpleAssistantProvider(
                     .build().also {
                         logger().info("Creating new ChromaEmbeddingStore for $collectionName")
                     }
-            } catch (err: Throwable) {
-                val message = "Couldn't initialize chroma embedding store : $err"
-                logger().error(message)
-                throw RuntimeException(message)
+            } catch (e: Throwable) {
+                logger().error("Couldn't initialize chroma embedding store: $e")
+                null
             }
-        } else InMemoryEmbeddingStore<TextSegment>().also {
-            logger().info("Creating new in-memory embedding store for $collectionName")
         }
+
+        return store
+            ?: InMemoryEmbeddingStore<TextSegment>().also {
+                    logger().info("Creating new in-memory embedding store for $collectionName")
+            }
     }
 }

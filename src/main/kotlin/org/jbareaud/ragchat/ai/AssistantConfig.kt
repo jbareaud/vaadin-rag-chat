@@ -21,11 +21,13 @@ class AssistantConfig(private val properties: ConfigProperties) {
             .build()
 
     @Bean
-    @ConditionalOnProperty(name = ["rag-chat.chroma-enabled"], havingValue = "true")
+    @ConditionalOnProperty(name = ["rag-chat.chroma.base-url"])
     fun chromaClient(props: ConfigProperties): ChromaClient? =
         props.chroma?.let {
             try {
                 ChromaClient(props).also {
+                    it.collectionNames()
+                }.also {
                     logger().info("Initialized chroma client")
                 }
             } catch (err: Throwable) {
