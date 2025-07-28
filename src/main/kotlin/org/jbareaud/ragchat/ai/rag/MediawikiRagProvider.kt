@@ -1,23 +1,23 @@
-package org.jbareaud.ragchat.ai.provider
+package org.jbareaud.ragchat.ai.rag
 
 import dev.langchain4j.data.document.splitter.DocumentSplitters
 import dev.langchain4j.http.client.HttpClientBuilder
 import org.jbareaud.ragchat.ai.ConfigProperties
-import org.jbareaud.ragchat.ai.AssistantType
+import org.jbareaud.ragchat.ai.RagType
 import org.jbareaud.ragchat.ai.splitter.MediawikiDocumentSplitter
 import org.jbareaud.ragchat.ai.chroma.ChromaClient
 import org.jbareaud.ragchat.ai.reranker.ScoringModelProvider
 import org.springframework.stereotype.Service
 
 @Service
-class MediawikiAssistantProvider(
+class MediawikiRagProvider(
     props: ConfigProperties,
     httpClientBuilder: HttpClientBuilder,
     scoringModelProvider: ScoringModelProvider,
     client: ChromaClient?,
-): AugmentedAssistantProvider(props, httpClientBuilder, client, scoringModelProvider) {
+): AugmentedRagProvider(props, httpClientBuilder, client, scoringModelProvider) {
 
-    override fun type() = AssistantType.MEDIAWIKI
+    override fun type() = RagType.MEDIAWIKI
 
     override fun documentSplitter() =
         MediawikiDocumentSplitter(

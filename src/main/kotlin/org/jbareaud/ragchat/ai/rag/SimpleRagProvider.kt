@@ -1,11 +1,9 @@
-package org.jbareaud.ragchat.ai.provider
+package org.jbareaud.ragchat.ai.rag
 
 import dev.langchain4j.data.document.loader.FileSystemDocumentLoader
 import dev.langchain4j.data.segment.TextSegment
 import dev.langchain4j.http.client.HttpClientBuilder
 import dev.langchain4j.memory.chat.MessageWindowChatMemory
-import dev.langchain4j.model.chat.StreamingChatModel
-import dev.langchain4j.model.ollama.OllamaStreamingChatModel
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever
 import dev.langchain4j.service.AiServices
 import dev.langchain4j.store.embedding.EmbeddingStore
@@ -13,37 +11,31 @@ import dev.langchain4j.store.embedding.EmbeddingStoreIngestor
 import dev.langchain4j.store.embedding.chroma.ChromaEmbeddingStore
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore
 import org.jbareaud.ragchat.ai.ConfigProperties
-import org.jbareaud.ragchat.ai.AssistantType
+import org.jbareaud.ragchat.ai.RagType
 import org.jbareaud.ragchat.ai.chroma.ChromaClient
+import org.jbareaud.ragchat.ai.provider.streamingChatModel
 import org.jbareaud.ragchat.logger
 import org.springframework.stereotype.Service
 
 @Service
-class SimpleAssistantProvider(
+class SimpleRagProvider(
     protected val props: ConfigProperties,
     protected val httpClientBuilder: HttpClientBuilder,
     private val client: ChromaClient? = null,
-): AssistantProvider {
+): RagAssistantProvider {
 
-    override fun type() = AssistantType.SIMPLE
+    override fun type() = RagType.SIMPLE
 
-    override fun instantiateAssistant(
-        chatModelName: String,
-        collectionName: String?,
-        createKnowledgeBase: Boolean,
-        embeddingModelName: String?,
-        rerankerModelName: String?,
-        docsLocation: String?
-    ): RagAssistant {
-        checkParameters(docsLocation, embeddingModelName, rerankerModelName)
-        val embeddingStore = embeddingStore(collectionName)
+    override fun instantiateAssistant(parameters: RagParameters): RagAssistant {
+        checkParameters(parameters.docsLocation, parameters.embeddingModelName, parameters.rerankerModelName)
+        val embeddingStore = embeddingStore(parameters.collectionName)
         val contentRetriever = EmbeddingStoreContentRetriever.from(embeddingStore)
-        if (createKnowledgeBase) {
-            val docs = FileSystemDocumentLoader.loadDocuments(docsLocation)
+        if (parameters.createKnowledgeBase) {
+            val docs = FileSystemDocumentLoader.loadDocuments(parameters.docsLocation)
             EmbeddingStoreIngestor.ingest(docs, embeddingStore)
         }
         return AiServices.builder(RagAssistant::class.java)
-            .streamingChatModel(streamingChatModel(chatModelName))
+            .streamingChatModel(streamingChatModel(parameters.chatModelName))
             .chatMemoryProvider { MessageWindowChatMemory.withMaxMessages(props.memoryProviderMaxMessages) }
             .contentRetriever(contentRetriever)
             .build()
@@ -67,16 +59,12 @@ class SimpleAssistantProvider(
         }
     }
 
-    protected fun streamingChatModel(chatModelName: String): StreamingChatModel =
-        OllamaStreamingChatModel.builder()
-            .baseUrl(requireNotNull(props.ollama?.baseUrl))
-            .modelName(chatModelName)
-            .temperature(requireNotNull(props.ollama?.temperature))
-            .topK(requireNotNull(props.ollama?.topK))
-            .httpClientBuilder(httpClientBuilder)
-            .build().also {
-                logger().info("Initializing Ollama chat with $chatModelName")
-            }
+    protected fun streamingChatModel(chatModelName: String) =
+        streamingChatModel(
+            chatModelName = chatModelName,
+            httpClientBuilder = httpClientBuilder,
+            props = props,
+        )
 
     protected fun embeddingStore(collectionName: String?): EmbeddingStore<TextSegment> {
         val store = props.chroma?.baseUrl?.let { baseUrl ->

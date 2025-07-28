@@ -11,10 +11,8 @@ import com.vaadin.flow.router.Route
 import com.vaadin.flow.theme.lumo.LumoUtility
 import jakarta.annotation.PostConstruct
 import org.jbareaud.ragchat.ai.AssistantChatService
-import org.jbareaud.ragchat.ai.AssistantType
 import org.springframework.beans.factory.annotation.Autowired
 import org.vaadin.firitin.components.messagelist.MarkdownMessage
-import java.io.File
 import java.util.UUID
 
 
@@ -64,7 +62,7 @@ class RagChatView: VerticalLayout() {
                 messageList.add(answer)
                 answer.appendChatResponseAsync(questionText)
             } else {
-                Notification.show("Can't chat, knowledge base hasn't been properly initialized. Click the 'New Chat' button and pick a valid location.")
+                Notification.show("Please create a new chat")
             }
         }
 
@@ -104,13 +102,13 @@ class RagChatView: VerticalLayout() {
                 chatId = UUID.randomUUID().toString()
                 messageList.removeAll()
                 focusMessageInput()
-                Notification.show("Knowledge base processed, ready to chat")
+                Notification.show("New chat created")
             },
             cancelNewChat = {
                 if (chatId == null)
-                    Notification.show("No knowledge base set, unable to chat")
+                    Notification.show("Failed to initialize new chat")
                 else
-                    Notification.show("Canceled, keeping the previous knowledge base")
+                    Notification.show("Canceled, keeping the previous chat")
             })
         dialog.open()
     }

@@ -1,4 +1,4 @@
-package org.jbareaud.ragchat.ai.provider
+package org.jbareaud.ragchat.ai.rag
 
 import dev.langchain4j.data.document.DocumentSplitter
 import dev.langchain4j.data.document.loader.FileSystemDocumentLoader
@@ -15,9 +15,10 @@ import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever
 import dev.langchain4j.service.AiServices
 import dev.langchain4j.store.embedding.EmbeddingStore
 import dev.langchain4j.store.embedding.EmbeddingStoreIngestor
-import org.jbareaud.ragchat.ai.AssistantType
+import org.jbareaud.ragchat.ai.RagType
 import org.jbareaud.ragchat.ai.ConfigProperties
 import org.jbareaud.ragchat.ai.chroma.ChromaClient
+import org.jbareaud.ragchat.ai.provider.streamingChatModel
 import org.jbareaud.ragchat.ai.reranker.ScoringModelProvider
 import org.jbareaud.ragchat.logger
 import org.springframework.stereotype.Service
@@ -26,32 +27,25 @@ import java.time.temporal.ChronoUnit
 
 
 @Service
-class AugmentedAssistantProvider(
+class AugmentedRagProvider(
     props: ConfigProperties,
     httpClientBuilder: HttpClientBuilder,
     client: ChromaClient? = null,
     private val scoringModelProvider: ScoringModelProvider,
-): SimpleAssistantProvider(props, httpClientBuilder, client) {
+): SimpleRagProvider(props, httpClientBuilder, client) {
 
-    override fun type() = AssistantType.AUGMENTED
+    override fun type() = RagType.AUGMENTED
 
-    override fun instantiateAssistant(
-        chatModelName: String,
-        collectionName: String?,
-        createKnowledgeBase: Boolean,
-        embeddingModelName: String?,
-        rerankerModelName: String?,
-        docsLocation: String?
-    ): RagAssistant {
+    override fun instantiateAssistant(parameters: RagParameters): RagAssistant {
 
-        val streamingChatModel = streamingChatModel(chatModelName)
+        val streamingChatModel = streamingChatModel(parameters.chatModelName)
 
-        val embeddingModel = embeddingModel(embeddingModelName)
+        val embeddingModel = embeddingModel(parameters.embeddingModelName)
 
-        val embeddingStore = embeddingStore(collectionName)
+        val embeddingStore = embeddingStore(parameters.collectionName)
 
-        if (createKnowledgeBase) {
-            ingestKnowledgeBase(docsLocation, embeddingModel, embeddingStore)
+        if (parameters.createKnowledgeBase) {
+            ingestKnowledgeBase(parameters.docsLocation, embeddingModel, embeddingStore)
         }
 
         val contentRetriever = EmbeddingStoreContentRetriever.builder()
@@ -63,7 +57,8 @@ class AugmentedAssistantProvider(
         val retrievalAugmentor = DefaultRetrievalAugmentor.builder()
             .contentRetriever(contentRetriever)
             .apply {
-                if (rerankerModelName != null) reRankingContentAggregator(rerankerModelName)?.let { contentAggregator(it) }
+                if (parameters.rerankerModelName != null)
+                    reRankingContentAggregator(parameters.rerankerModelName)?.let { contentAggregator(it) }
             }
             .build()
 

@@ -1,6 +1,6 @@
 package org.jbareaud.ragchat.ai
 
-enum class AssistantType {
+enum class RagType {
     SIMPLE,
     AUGMENTED,
     MEDIAWIKI,

@@ -3,9 +3,12 @@ package org.jbareaud.ragchat.ai
 import dev.langchain4j.model.ollama.OllamaModel
 import dev.langchain4j.model.ollama.OllamaModels
 import dev.langchain4j.service.TokenStream
-import org.jbareaud.ragchat.ai.provider.AssistantProvider
-import org.jbareaud.ragchat.ai.provider.RagAssistant
+import org.jbareaud.ragchat.ai.chat.ChatAssistantProvider
+import org.jbareaud.ragchat.ai.chat.ChatParameters
+import org.jbareaud.ragchat.ai.rag.RagAssistantProvider
 import org.jbareaud.ragchat.ai.chroma.ChromaClient
+import org.jbareaud.ragchat.ai.provider.Assistant
+import org.jbareaud.ragchat.ai.rag.RagParameters
 import org.jbareaud.ragchat.ai.reranker.ScoringModelProvider
 import org.jbareaud.ragchat.logger
 import org.springframework.beans.factory.annotation.Value
@@ -16,7 +19,8 @@ import reactor.core.publisher.Sinks
 
 @Service
 class AssistantChatService(
-    private val providers: List<AssistantProvider>,
+    private val ragProviders: List<RagAssistantProvider>,
+    private val chatProvider: ChatAssistantProvider,
     private val ollamaModels: OllamaModels,
     private val scoringModelProvider: ScoringModelProvider,
     private val chromaClient: ChromaClient?,
@@ -25,7 +29,7 @@ class AssistantChatService(
     @Value("\${rag-chat.default-chat-selection}") private val defaultChatSelection:List<String>,
 ) {
 
-    private var assistant: RagAssistant = object : RagAssistant {
+    private var assistant: Assistant = object : Assistant {
         override fun chat(memoryId: String, message: String): TokenStream {
             throw RuntimeException("assistant not initialized yet")
         }
@@ -35,7 +39,7 @@ class AssistantChatService(
         ollamaModels.availableModels().content()
     }
 
-    fun chatTypes() = providers.map(AssistantProvider::type).sorted()
+    fun chatTypes() = ragProviders.map(RagAssistantProvider::type).sorted()
 
     fun embeddingModels() = listModels.toNameList(embeddingFamilies)
 
@@ -51,30 +55,38 @@ class AssistantChatService(
     fun dataStores() = chromaClient?.collectionNames().orEmpty()
 
     fun newAssistant(
-        type: AssistantType,
+        chatType: ChatType,
+        ragType: RagType? = null,
         chatModelName: String,
-        collectionName: String?,
-        createKnowledgeBase: Boolean,
-        embeddingModelName: String?,
-        rerankerModelName: String?,
-        docsLocation: String?
+        collectionName: String? = null,
+        createKnowledgeBase: Boolean? = null,
+        embeddingModelName: String? = null,
+        rerankerModelName: String? = null,
+        docsLocation: String? = null,
     ) {
-        checkAssistantType(type)
-        logger().info("Initializing new assistant of type $type")
-        assistant = providers
-            .first { it.type() == type }
-            .instantiateAssistant(
-                chatModelName = chatModelName,
-                collectionName = collectionName,
-                createKnowledgeBase = createKnowledgeBase,
-                embeddingModelName = embeddingModelName,
-                rerankerModelName = rerankerModelName,
-                docsLocation = docsLocation,
-            )
+        logger().info("Initializing new assistant of type $ragType")
+        assistant = when(chatType) {
+            ChatType.SIMPLE -> chatProvider.instantiateAssistant(ChatParameters(chatModelName))
+            ChatType.RAG -> {
+                checkAssistantType(requireNotNull(ragType))
+                ragProviders
+                    .first { it.type() == ragType }
+                    .instantiateAssistant(
+                        RagParameters(
+                            chatModelName = chatModelName,
+                            collectionName = collectionName,
+                            createKnowledgeBase = requireNotNull(createKnowledgeBase),
+                            embeddingModelName = embeddingModelName,
+                            rerankerModelName = rerankerModelName,
+                            docsLocation = docsLocation,
+                        )
+                    )
+            }
+        }
         logger().info("Finished initializing new assistant")
     }
 
-    private fun checkAssistantType(type: AssistantType) {
+    private fun checkAssistantType(type: RagType) {
         if (type !in chatTypes()) {
             val message = "$type chat type requested is not available"
             logger().error(message)
