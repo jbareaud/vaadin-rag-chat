@@ -20,13 +20,13 @@ import dev.langchain4j.model.scoring.ScoringModel
 class OllamaScoringModel(builder: OllamaScoringModelBuilder) : ScoringModel {
 
     companion object {
-        private const val SYSTEM_PROMPT = """
+        private val SYSTEM_PROMPT = """
            You are an expert relevance ranker. 
            Given a document and a query, your job is to determine how relevant the document is for answering the query. 
            Your output is JSON, which contains two fields, content and score.  
            score is from 0.00 to 1.00.
            Higher relevance means higher score.
-       """
+       """.trimIndent()
 
         fun builder() = OllamaScoringModelBuilder()
     }
