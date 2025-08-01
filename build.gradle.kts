@@ -19,10 +19,13 @@ repositories {
 	mavenCentral()
 }
 
-extra["vaadinVersion"] = "24.8.2"
-extra["langchain4jVersion"] = "1.1.0-beta7"
-extra["lineAwesomeVersion"] = "2.1.0"
-extra["viritinVersion"] = "2.16.0"
+extra.apply {
+	set("vaadinVersion", "24.8.2")
+	set("langchain4jVersion", "1.1.0-beta7")
+	set("lineAwesomeVersion", "2.1.0")
+	set("viritinVersion", "2.16.0")
+	//set("jsoupVersion", "1.21.1")
+}
 
 dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -45,6 +48,9 @@ dependencies {
 	// Jackson
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
+
+	// Jsoup
+	//implementation("org.jsoup:jsoup:${property("jsoupVersion")}")
 
 	// tests
 	testImplementation("org.springframework.boot:spring-boot-starter-test")

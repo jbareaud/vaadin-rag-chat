@@ -12,7 +12,7 @@ import com.vaadin.flow.component.tabs.TabSheet
 import com.vaadin.flow.component.textfield.TextField
 import org.jbareaud.ragchat.ai.AssistantChatService
 import org.jbareaud.ragchat.ai.ChatType
-import org.jbareaud.ragchat.ai.RagType
+import org.jbareaud.ragchat.ai.rag.RagType
 import org.jbareaud.ragchat.logger
 import java.io.File
 

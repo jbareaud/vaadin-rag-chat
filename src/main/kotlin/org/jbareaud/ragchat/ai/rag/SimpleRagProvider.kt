@@ -11,7 +11,6 @@ import dev.langchain4j.store.embedding.EmbeddingStoreIngestor
 import dev.langchain4j.store.embedding.chroma.ChromaEmbeddingStore
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore
 import org.jbareaud.ragchat.ai.ConfigProperties
-import org.jbareaud.ragchat.ai.RagType
 import org.jbareaud.ragchat.ai.chroma.ChromaClient
 import org.jbareaud.ragchat.ai.provider.streamingChatModel
 import org.jbareaud.ragchat.logger

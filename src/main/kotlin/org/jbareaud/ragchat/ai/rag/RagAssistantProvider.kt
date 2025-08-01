@@ -1,6 +1,5 @@
 package org.jbareaud.ragchat.ai.rag
 
-import org.jbareaud.ragchat.ai.RagType
 import org.jbareaud.ragchat.ai.provider.AssistantProvider
 
 interface RagAssistantProvider: AssistantProvider<RagParameters, RagAssistant> {

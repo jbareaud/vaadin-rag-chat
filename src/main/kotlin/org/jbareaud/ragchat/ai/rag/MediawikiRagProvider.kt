@@ -3,7 +3,6 @@ package org.jbareaud.ragchat.ai.rag
 import dev.langchain4j.data.document.splitter.DocumentSplitters
 import dev.langchain4j.http.client.HttpClientBuilder
 import org.jbareaud.ragchat.ai.ConfigProperties
-import org.jbareaud.ragchat.ai.RagType
 import org.jbareaud.ragchat.ai.splitter.MediawikiDocumentSplitter
 import org.jbareaud.ragchat.ai.chroma.ChromaClient
 import org.jbareaud.ragchat.ai.reranker.ScoringModelProvider

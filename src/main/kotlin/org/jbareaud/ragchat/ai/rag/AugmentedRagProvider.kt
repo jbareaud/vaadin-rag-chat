@@ -15,10 +15,8 @@ import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever
 import dev.langchain4j.service.AiServices
 import dev.langchain4j.store.embedding.EmbeddingStore
 import dev.langchain4j.store.embedding.EmbeddingStoreIngestor
-import org.jbareaud.ragchat.ai.RagType
 import org.jbareaud.ragchat.ai.ConfigProperties
 import org.jbareaud.ragchat.ai.chroma.ChromaClient
-import org.jbareaud.ragchat.ai.provider.streamingChatModel
 import org.jbareaud.ragchat.ai.reranker.ScoringModelProvider
 import org.jbareaud.ragchat.logger
 import org.springframework.stereotype.Service
