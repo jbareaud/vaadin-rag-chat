@@ -24,7 +24,6 @@ extra.apply {
 	set("langchain4jVersion", "1.1.0-beta7")
 	set("lineAwesomeVersion", "2.1.0")
 	set("viritinVersion", "2.16.0")
-	//set("jsoupVersion", "1.21.1")
 }
 
 dependencies {
@@ -48,9 +47,7 @@ dependencies {
 	// Jackson
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
-
-	// Jsoup
-	//implementation("org.jsoup:jsoup:${property("jsoupVersion")}")
+	implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
 	// tests
 	testImplementation("org.springframework.boot:spring-boot-starter-test")

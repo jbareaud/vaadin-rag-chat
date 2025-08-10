@@ -2,7 +2,6 @@ package org.jbareaud.ragchat.ai
 
 import dev.langchain4j.model.ollama.OllamaModel
 import dev.langchain4j.model.ollama.OllamaModels
-import dev.langchain4j.service.TokenStream
 import org.jbareaud.ragchat.ai.chat.ChatAssistantProvider
 import org.jbareaud.ragchat.ai.chat.ChatParameters
 import org.jbareaud.ragchat.ai.rag.RagAssistantProvider
@@ -14,8 +13,6 @@ import org.jbareaud.ragchat.ai.reranker.ScoringModelProvider
 import org.jbareaud.ragchat.logger
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Sinks
 
 
 @Service
@@ -30,17 +27,11 @@ class AssistantChatService(
     @Value("\${rag-chat.default-chat-selection}") private val defaultChatSelection:List<String>,
 ) {
 
-    private var assistant: Assistant = object : Assistant {
-        override fun chat(memoryId: String, message: String): TokenStream {
-            throw RuntimeException("assistant not initialized yet")
-        }
-    }
-
     private val listModels by lazy {
         ollamaModels.availableModels().content()
     }
 
-    fun chatTypes() = ragProviders.map(RagAssistantProvider::type).sorted()
+    fun ragTypes() = ragProviders.map(RagAssistantProvider::type).sorted()
 
     fun embeddingModels() = listModels.toNameList(embeddingFamilies)
 
@@ -64,9 +55,9 @@ class AssistantChatService(
         embeddingModelName: String? = null,
         rerankerModelName: String? = null,
         docsLocation: String? = null,
-    ) {
+    ): Assistant {
         logger().info("Initializing new assistant of type $ragType")
-        assistant = when(chatType) {
+        return when(chatType) {
             ChatType.SIMPLE -> chatProvider.instantiateAssistant(ChatParameters(chatModelName))
             ChatType.RAG -> {
                 checkAssistantType(requireNotNull(ragType))
@@ -84,32 +75,14 @@ class AssistantChatService(
                     )
             }
         }
-        logger().info("Finished initializing new assistant")
     }
 
     private fun checkAssistantType(type: RagType) {
-        if (type !in chatTypes()) {
+        if (type !in ragTypes()) {
             val message = "$type chat type requested is not available"
             logger().error(message)
             throw AssistantException(message)
         }
-    }
-
-    fun streamNewMessage(chatId: String, userMessage: String): Flux<String> {
-        val sink = Sinks.many().unicast().onBackpressureBuffer<String>()
-        assistant.chat(chatId, userMessage)
-            .onPartialResponse { partial ->
-                sink.tryEmitNext(partial)
-            }
-            .onCompleteResponse { _ ->
-                sink.tryEmitComplete()
-            }
-            .onError { err ->
-                logger().error("Error during streaming of message : $err")
-                sink.tryEmitError(err)
-            }
-            .start()
-        return sink.asFlux()
     }
 }
 

@@ -45,4 +45,3 @@ data class ScoringItemProperties(
     val modelName: String? = null,
     val temperature: Double? = null,
 )
-

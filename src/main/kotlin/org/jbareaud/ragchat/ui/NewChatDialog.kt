@@ -10,30 +10,31 @@ import com.vaadin.flow.component.notification.Notification
 import com.vaadin.flow.component.orderedlayout.VerticalLayout
 import com.vaadin.flow.component.tabs.TabSheet
 import com.vaadin.flow.component.textfield.TextField
+import com.vaadin.flow.server.VaadinServlet
 import org.jbareaud.ragchat.ai.AssistantChatService
 import org.jbareaud.ragchat.ai.ChatType
 import org.jbareaud.ragchat.ai.rag.RagType
-import org.jbareaud.ragchat.logger
+import org.springframework.web.context.support.WebApplicationContextUtils
 import java.io.File
+import java.util.*
 
 
 class NewChatDialog(
-    private val service: AssistantChatService,
-    private val createNewChat: () -> Unit,
-    private val cancelNewChat: () -> Unit,
+    private val createNewChatCallback: (chatType: ChatType, newChatId: String) -> Unit,
+    private val cancelNewChatCallback: () -> Unit,
 ): Dialog() {
 
     companion object {
-        const val TAB_CHAT_INDEX = 0
-        const val TAB_RAG_INDEX = 1
-
         const val TAB_RAG_CREATE_INDEX = 0
         const val TAB_RAG_SELECT_INDEX = 1
     }
 
-    private lateinit var comboChatType: ComboBox<RagType>
-    private lateinit var comboRagChat: ComboBox<String>
-    private lateinit var comboSimpleChat: ComboBox<String>
+    val service = WebApplicationContextUtils
+            .getWebApplicationContext(VaadinServlet.getCurrent().servletContext)!!
+            .getBean(AssistantChatService::class.java)
+
+    private lateinit var comboRagType: ComboBox<RagType>
+    private lateinit var comboChatModel: ComboBox<String>
     private lateinit var comboRerankers: ComboBox<String>
     private lateinit var comboEmbeddings: ComboBox<String>
     private lateinit var comboKnowledgeBases: ComboBox<String>
@@ -55,30 +56,24 @@ class NewChatDialog(
         val dialogLayout = VerticalLayout()
         add(dialogLayout)
 
+        comboChatModel = ComboBox("Chat models", service.chatModels())
+        comboChatModel.value = service.defaultChatModel()
+        comboChatModel.setWidthFull()
+        add(comboChatModel)
+
         chatTabSheet = TabSheet()
-        chatTabSheet.add("Simple Chat", addSimpleChatDialogContent())
         chatTabSheet.add("RAG", addRagDialogContent())
         dialogLayout.add(chatTabSheet)
-    }
-
-    private fun addSimpleChatDialogContent(): Component {
-        val tabLayout = VerticalLayout()
-
-        comboSimpleChat = ComboBox("Chat models", service.chatModels())
-        comboSimpleChat.value = service.defaultChatModel()
-        comboSimpleChat.setWidthFull()
-        tabLayout.add(comboSimpleChat)
-
-        return tabLayout
     }
 
     private fun addRagDialogContent(): Component {
         val dialogRagLayout = VerticalLayout()
 
-        comboChatType = ComboBox("Chat Type", service.chatTypes())
-        comboChatType.value = RagType.SIMPLE
-        comboChatType.setWidthFull()
-        dialogRagLayout.add(comboChatType)
+
+        comboRagType = ComboBox("Chat Type", service.ragTypes())
+        comboRagType.value = RagType.SIMPLE
+        comboRagType.setWidthFull()
+        dialogRagLayout.add(comboRagType)
 
         ragTabSheet = TabSheet()
         ragTabSheet.add("Create", tabCreate())
@@ -86,12 +81,6 @@ class NewChatDialog(
             //isEnabled = service.dataStores().isNotEmpty() // FIXME
         }
         dialogRagLayout.add(ragTabSheet)
-
-
-        comboRagChat = ComboBox("Chat models", service.chatModels())
-        comboRagChat.value = service.defaultChatModel()
-        comboRagChat.setWidthFull()
-        dialogRagLayout.add(comboRagChat)
 
         comboEmbeddings = ComboBox("Embedding", service.embeddingModels())
         comboEmbeddings.value = null
@@ -108,41 +97,14 @@ class NewChatDialog(
 
     private fun addFooterContent() {
         val saveButton = Button("OK") { _: ClickEvent<Button> ->
-            try {
-                val chatId = chatTabSheet.selectedIndex
-                val ragId = ragTabSheet.selectedIndex
-                when(chatId to ragId) {
-                    (TAB_CHAT_INDEX to TAB_RAG_CREATE_INDEX), (TAB_CHAT_INDEX to TAB_RAG_SELECT_INDEX) -> {
-                        createSimpleChat(comboSimpleChat.value)
-                    }
-                    (TAB_RAG_INDEX to TAB_RAG_CREATE_INDEX) -> {
-                            createRagChatWithNewKB(
-                                comboChatType.value,
-                                docLocationTextField.value,
-                                comboRagChat.value,
-                                comboEmbeddings.value.sanitize(),
-                                comboRerankers.value.sanitize(),
-                            )
-                        }
-                    (TAB_RAG_INDEX to TAB_RAG_SELECT_INDEX) -> {
-                            createRagChatWithExistingKB(
-                                comboChatType.value,
-                                comboKnowledgeBases.value,
-                                comboRagChat.value,
-                                comboEmbeddings.value.sanitize(),
-                                comboRerankers.value.sanitize(),
-                            )
-                        }
-                    else -> logger().error("Impossible to create new chat, unknown NewChatDialog case")
-                }
-                createNewChat()
-            } catch (err: Throwable) {
-                Notification.show("There was an error during the creation of the new chat")
-            }
+            val newChatId = UUID.randomUUID().toString()
+            val chatType = ChatType.RAG
+            createChatSession(chatType, newChatId)
+            createNewChatCallback(chatType, newChatId)
             close()
         }
         val cancelButton = Button("Cancel") { _: ClickEvent<Button> ->
-            cancelNewChat()
+            cancelNewChatCallback()
             close()
         }
         footer.add(cancelButton)
@@ -181,43 +143,73 @@ class NewChatDialog(
         return tabLayout
     }
 
-    private fun createSimpleChat(chatModelName: String) {
-        service.newAssistant(
-            chatType = ChatType.SIMPLE,
-            chatModelName = chatModelName,
-        )
-    }
-
-    private fun createRagChatWithNewKB(type: RagType, location: String, chatModelName: String, embeddingModelName: String?, rerankerModelName: String?) {
-        val file = File(location)
-        if (file.isDirectory) {
-            val collectionName = location.split(File.separator).last()
-            service.newAssistant(
-                chatType = ChatType.RAG,
-                ragType = type,
-                collectionName = collectionName,
-                createKnowledgeBase = true,
-                chatModelName = chatModelName,
-                embeddingModelName = embeddingModelName,
-                rerankerModelName = rerankerModelName,
-                docsLocation = location,
-            )
-        } else {
-            Notification.show("Knowledge base couldn't be created, doc location isn't valid")
+    private fun createChatSession(chatType: ChatType, newChatId: String) {
+        when(chatType) {
+            ChatType.SIMPLE -> {
+                ChatSessionStore.save(
+                    ChatSession(
+                        chatId = newChatId,
+                        title = "Chat",
+                        chatType = ChatType.SIMPLE,
+                        chatModel = comboChatModel.value,
+                    )
+                )
+            }
+            ChatType.RAG -> {
+                createRagChatSession(chatType, newChatId)
+            }
         }
     }
 
-    private fun createRagChatWithExistingKB(type: RagType, collectionName: String, chatModelName: String, embeddingModelName: String?, rerankerModelName: String?) {
-        service.newAssistant(
-            chatType = ChatType.RAG,
-            ragType = type,
-            collectionName = collectionName,
-            createKnowledgeBase = false,
-            chatModelName = chatModelName,
-            embeddingModelName = embeddingModelName,
-            rerankerModelName = rerankerModelName,
-            docsLocation = null,
-        )
+    private fun createRagChatSession(chatType: ChatType, newChatId: String) {
+        val ragId = ragTabSheet.selectedIndex
+        when (ragId) {
+            (TAB_RAG_CREATE_INDEX) -> {
+                val location = docLocationTextField.value
+                val file = File(location)
+                if (file.isDirectory) {
+                    val collectionName = location.split(File.separator).last()
+                    ChatSessionStore.save(
+                        ChatSession(
+                            chatId = newChatId,
+                            title = "Rag : $collectionName",
+                            chatType = ChatType.RAG,
+                            chatModel = comboChatModel.value,
+                            settings = mutableMapOf(
+                                "ragType" to comboRagType.value.toString(),
+                                "createKnowledgeBase" to "true",
+                                "collectionName" to collectionName,
+                                "location" to docLocationTextField.value
+                            ).apply {
+                                comboEmbeddings.value.sanitize()?.let { put("embeddingModelName", it) }
+                                comboRerankers.value.sanitize()?.let { put("rerankerModelName", it) }
+                            }
+                        )
+                    )
+                } else {
+                    Notification.show("Knowledge base cannot be created, doc location isn't valid")
+                }
+            }
+            (TAB_RAG_SELECT_INDEX) -> {
+                val collectionName = comboKnowledgeBases.value
+                ChatSessionStore.save(
+                    ChatSession(
+                        chatId = newChatId,
+                        title = "Rag : $collectionName",
+                        chatType = ChatType.RAG,
+                        chatModel = comboChatModel.value,
+                        settings = mutableMapOf(
+                            "ragType" to comboRagType.value.toString(),
+                            "createKnowledgeBase" to "false",
+                            "collectionName" to collectionName,
+                        ).apply {
+                            comboEmbeddings.value.sanitize()?.let { put("embeddingModelName", it) }
+                            comboRerankers.value.sanitize()?.let { put("rerankerModelName", it) }
+                        }
+                    )
+                )
+            }
+        }
     }
 }
 
