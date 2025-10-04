@@ -9,7 +9,6 @@ import com.vaadin.flow.component.dialog.Dialog
 import com.vaadin.flow.component.notification.Notification
 import com.vaadin.flow.component.orderedlayout.VerticalLayout
 import com.vaadin.flow.component.tabs.TabSheet
-import com.vaadin.flow.component.textfield.TextField
 import com.vaadin.flow.server.VaadinServlet
 import org.jbareaud.ragchat.ai.AssistantChatService
 import org.jbareaud.ragchat.ai.ChatType
@@ -17,9 +16,11 @@ import org.jbareaud.ragchat.ai.rag.RagType
 import org.springframework.web.context.support.WebApplicationContextUtils
 import java.io.File
 import java.util.*
+import kotlin.io.path.absolutePathString
 
 
 class NewChatDialog(
+    private val location:String,
     private val createNewChatCallback: (chatType: ChatType, newChatId: String) -> Unit,
     private val cancelNewChatCallback: () -> Unit,
 ): Dialog() {
@@ -38,7 +39,7 @@ class NewChatDialog(
     private lateinit var comboRerankers: ComboBox<String>
     private lateinit var comboEmbeddings: ComboBox<String>
     private lateinit var comboKnowledgeBases: ComboBox<String>
-    private lateinit var docLocationTextField: TextField
+    private lateinit var comboLocation: ComboBox<String>
     private lateinit var textCollectionName: Text
     private lateinit var chatTabSheet: TabSheet
     private lateinit var ragTabSheet: TabSheet
@@ -77,9 +78,7 @@ class NewChatDialog(
 
         ragTabSheet = TabSheet()
         ragTabSheet.add("Create", tabCreate())
-        ragTabSheet.add("Select", tabSelect()).also {
-            //isEnabled = service.dataStores().isNotEmpty() // FIXME
-        }
+        ragTabSheet.add("Select", tabSelect())
         dialogRagLayout.add(ragTabSheet)
 
         comboEmbeddings = ComboBox("Embedding", service.embeddingModels())
@@ -114,16 +113,17 @@ class NewChatDialog(
     private fun tabCreate(): Component {
 
         val tabLayout = VerticalLayout()
-        docLocationTextField = TextField("Knowledge base location", "Copy/paste here")
-        docLocationTextField.setSizeFull()
-        tabLayout.add(docLocationTextField)
+
+        comboLocation = ComboBox("Knowledge base", location.listDirectories())
+        comboLocation.setSizeFull()
+        tabLayout.add(comboLocation)
 
         textCollectionName = Text(textCollectionNameMessage(null))
         tabLayout.add(textCollectionName)
 
         tabLayout.setSizeFull()
 
-        docLocationTextField.addValueChangeListener { event ->
+        comboLocation.addValueChangeListener { event ->
             textCollectionName.text = textCollectionNameMessage(event.value)
         }
 
@@ -165,21 +165,20 @@ class NewChatDialog(
         val ragId = ragTabSheet.selectedIndex
         when (ragId) {
             (TAB_RAG_CREATE_INDEX) -> {
-                val location = docLocationTextField.value
-                val file = File(location)
-                if (file.isDirectory) {
-                    val collectionName = location.split(File.separator).last()
+                val selectedValue = comboLocation.value
+                val selectedDirectory = File(location, selectedValue)
+                if (selectedDirectory.isDirectory) {
                     ChatSessionStore.save(
                         ChatSession(
                             chatId = newChatId,
-                            title = "Rag : $collectionName",
+                            title = "Rag : $selectedValue",
                             chatType = ChatType.RAG,
                             chatModel = comboChatModel.value,
                             settings = mutableMapOf(
                                 "ragType" to comboRagType.value.toString(),
                                 "createKnowledgeBase" to "true",
-                                "collectionName" to collectionName,
-                                "location" to docLocationTextField.value
+                                "collectionName" to selectedValue,
+                                "location" to selectedDirectory.toPath().absolutePathString(),
                             ).apply {
                                 comboEmbeddings.value.sanitize()?.let { put("embeddingModelName", it) }
                                 comboRerankers.value.sanitize()?.let { put("rerankerModelName", it) }
@@ -187,7 +186,7 @@ class NewChatDialog(
                         )
                     )
                 } else {
-                    Notification.show("Knowledge base cannot be created, doc location isn't valid")
+                    Notification.show("Knowledge base cannot be created, doc location isn't valid : $selectedDirectory")
                 }
             }
             (TAB_RAG_SELECT_INDEX) -> {
@@ -212,6 +211,13 @@ class NewChatDialog(
         }
     }
 }
+
+private fun String.listDirectories() =
+    with(File(this)) {
+        listFiles { file ->
+            file.isDirectory
+        }?.map { it.name }.orEmpty()
+    }
 
 private fun textCollectionNameMessage(value: String?) =
     "Collection name : ${

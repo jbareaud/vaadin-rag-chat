@@ -15,9 +15,12 @@ import com.vaadin.flow.component.sidenav.SideNav
 import com.vaadin.flow.component.sidenav.SideNavItem
 import com.vaadin.flow.router.PageTitle
 import com.vaadin.flow.theme.lumo.LumoUtility
+import org.springframework.beans.factory.annotation.Value
 
 
-class ChatMainLayout: AppLayout() {
+class ChatMainLayout(
+    @Value("\${rag-chat.knowledge-bases.location}") private val location:String,
+): AppLayout() {
 
     private lateinit var viewTitle:H2
     private lateinit var nav: SideNav
@@ -46,6 +49,7 @@ class ChatMainLayout: AppLayout() {
         val button =  Button("New Chat")
         button.addClickListener {
             val dialog = NewChatDialog(
+                location = location,
                 createNewChatCallback = { chatType, newChatId ->
                     if (!chatTabs.containsKey(newChatId)) {
                         val item = SideNavItem(ChatSessionStore.get(newChatId)?.title, "chat/$newChatId")

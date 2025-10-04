@@ -14,7 +14,7 @@ rag-chat:
     max-chars: 2000
     overlap-chars: 200
   ollama:
-    base-url: http://localhost:11434
+    base-url: ${OLLAMA_SERVICE_URL:http://localhost:11434}
     temperature: 0.3
     top-k: 5
   scoring:
@@ -23,20 +23,22 @@ rag-chat:
       -
         type: ONNX
         name: mxbai-rerank-xsmall-v1
-        path-to-model: D:\\LLM\\models\\ONNX\\mxbai-rerank-xsmall-v1\\model.onnx
-        path-to-tokenizer: D:\\LLM\\models\\ONNX\\mxbai-rerank-xsmall-v1\\tokenizer.json
+        path-to-model: /app/ONNX/mxbai-rerank-xsmall-v1/model.onnx
+        path-to-tokenizer: /app/ONNX/mxbai-rerank-xsmall-v1/tokenizer.json
       -
         type: ONNX
         name: ms-marco-MiniLM-L6-v2
-        path-to-model: D:\\LLM\\models\\ONNX\\ms-marco-MiniLM-L6-v2\\model.onnx
-        path-to-tokenizer: D:\\LLM\\models\\ONNX\\ms-marco-MiniLM-L6-v2\\tokenizer.json
+        path-to-model: /app/ONNX/ms-marco-MiniLM-L6-v2/model.onnx
+        path-to-tokenizer: /app/ONNX/ms-marco-MiniLM-L6-v2/tokenizer.json
       -
         type: LLM
         name: LLM mistral-nemo
         model-name: mistral-nemo:latest
         temperature: 0.1
+  knowledge-bases:
+    location: /app/knowledge_bases
   chroma:
-    base-url: http://localhost:8000
+    base-url: http://${CHROMA_HOST:localhost}:${CHROMA_PORT:8000}
     client-timeout: 10s
     store-timeout: 60s
 
