@@ -1,5 +1,6 @@
 package org.jbareaud.ragchat.ai.rag
 
+import dev.langchain4j.data.document.Document
 import dev.langchain4j.data.document.DocumentSplitter
 import dev.langchain4j.data.document.loader.FileSystemDocumentLoader
 import dev.langchain4j.data.document.splitter.DocumentSplitters
@@ -88,7 +89,13 @@ class AugmentedRagProvider(
             .embeddingStore(embeddingStore)
             .build()
 
-        val docs = FileSystemDocumentLoader.loadDocuments(docsLocation)
+        val docs = readDocuments(docsLocation).also {
+            if (it.isEmpty()) {
+                val message = "No documents to ingest at location $docsLocation"
+                logger().error(message)
+                throw RuntimeException(message)
+            }
+        }
 
         try {
             ingestor.ingest(docs)
@@ -112,7 +119,10 @@ class AugmentedRagProvider(
     }
 
     protected fun documentSplitter(): DocumentSplitter =
-        DocumentSplitters.recursive(requireNotNull(props.splitter?.maxChars), requireNotNull(props.splitter?.overlapChars))
+        DocumentSplitters.recursive(
+            requireNotNull(props.splitter?.maxChars),
+            requireNotNull(props.splitter?.overlapChars),
+        )
 
     protected fun embeddingModel(embeddingModelName: String?) =
         embeddingModelName?.let {
@@ -127,4 +137,7 @@ class AugmentedRagProvider(
         } ?: BgeSmallEnV15QuantizedEmbeddingModel().also {
                 logger().info("using default embedding model")
             }
+
+    protected fun readDocuments(docsLocation: String): List<Document> =
+        FileSystemDocumentLoader.loadDocuments(docsLocation)
 }

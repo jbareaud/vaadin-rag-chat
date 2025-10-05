@@ -4,4 +4,5 @@ enum class RagType {
     SIMPLE,
     AUGMENTED,
     MEDIAWIKI,
+    PDF,
 }

@@ -24,6 +24,7 @@ extra.apply {
 	set("langchain4jVersion", "1.1.0-beta7")
 	set("lineAwesomeVersion", "2.1.0")
 	set("viritinVersion", "2.16.0")
+	set("pdfboxVersion", "3.0.5")
 }
 
 dependencies {
@@ -43,6 +44,9 @@ dependencies {
 	implementation("dev.langchain4j:langchain4j-ollama-spring-boot-starter:${property("langchain4jVersion")}")
 	implementation("dev.langchain4j:langchain4j-onnx-scoring:${property("langchain4jVersion")}")
 	implementation("dev.langchain4j:langchain4j-chroma:${property("langchain4jVersion")}")
+
+	// PDF
+	implementation("org.apache.pdfbox:pdfbox:${property("pdfboxVersion")}")
 
 	// Jackson
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
