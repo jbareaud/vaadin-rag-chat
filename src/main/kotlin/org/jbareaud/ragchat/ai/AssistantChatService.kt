@@ -9,7 +9,7 @@ import org.jbareaud.ragchat.ai.chroma.ChromaClient
 import org.jbareaud.ragchat.ai.provider.Assistant
 import org.jbareaud.ragchat.ai.rag.RagParameters
 import org.jbareaud.ragchat.ai.rag.RagType
-import org.jbareaud.ragchat.ai.reranker.ScoringModelProvider
+import org.jbareaud.ragchat.ai.rag.reranker.ScoringModelProvider
 import org.jbareaud.ragchat.logger
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service

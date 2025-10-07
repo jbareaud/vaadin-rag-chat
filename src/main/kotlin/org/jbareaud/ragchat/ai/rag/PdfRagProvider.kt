@@ -5,7 +5,7 @@ import dev.langchain4j.data.document.loader.FileSystemDocumentLoader
 import dev.langchain4j.http.client.HttpClientBuilder
 import org.jbareaud.ragchat.ai.ConfigProperties
 import org.jbareaud.ragchat.ai.chroma.ChromaClient
-import org.jbareaud.ragchat.ai.reranker.ScoringModelProvider
+import org.jbareaud.ragchat.ai.rag.reranker.ScoringModelProvider
 import org.springframework.stereotype.Service
 
 @Service

@@ -1,4 +1,4 @@
-package org.jbareaud.ragchat.ai.splitter
+package org.jbareaud.ragchat.ai.rag.splitter
 
 import dev.langchain4j.data.document.DocumentSplitter
 import dev.langchain4j.data.document.splitter.DocumentSplitters

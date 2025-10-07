@@ -18,7 +18,7 @@ import dev.langchain4j.store.embedding.EmbeddingStore
 import dev.langchain4j.store.embedding.EmbeddingStoreIngestor
 import org.jbareaud.ragchat.ai.ConfigProperties
 import org.jbareaud.ragchat.ai.chroma.ChromaClient
-import org.jbareaud.ragchat.ai.reranker.ScoringModelProvider
+import org.jbareaud.ragchat.ai.rag.reranker.ScoringModelProvider
 import org.jbareaud.ragchat.logger
 import org.springframework.stereotype.Service
 import java.time.Duration

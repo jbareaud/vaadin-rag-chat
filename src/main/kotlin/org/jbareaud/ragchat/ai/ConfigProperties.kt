@@ -1,6 +1,6 @@
 package org.jbareaud.ragchat.ai
 
-import org.jbareaud.ragchat.ai.reranker.ScoringType
+import org.jbareaud.ragchat.ai.rag.reranker.ScoringType
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.bind.ConstructorBinding
 import java.time.Duration

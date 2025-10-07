@@ -1,4 +1,4 @@
-package org.jbareaud.ragchat.ai.reranker
+package org.jbareaud.ragchat.ai.rag.reranker
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import dev.langchain4j.data.message.SystemMessage

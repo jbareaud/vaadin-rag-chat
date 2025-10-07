@@ -1,4 +1,4 @@
-package org.jbareaud.ragchat.ai.reranker
+package org.jbareaud.ragchat.ai.rag.reranker
 
 import dev.langchain4j.model.scoring.ScoringModel
 import dev.langchain4j.model.scoring.onnx.OnnxScoringModel
