@@ -22,6 +22,9 @@ class MediawikiRagProvider(
         MediawikiDocumentSplitter(
             maxSegmentSizeInChars = requireNotNull(props.splitter?.maxChars),
             maxOverlapSizeInChars = requireNotNull(props.splitter?.overlapChars),
-            subSplitter = DocumentSplitters.recursive(requireNotNull(props.splitter?.maxChars), requireNotNull(props.splitter?.overlapChars)),
+            subSplitter = DocumentSplitters.recursive(
+                requireNotNull(props.splitter?.maxChars),
+                requireNotNull(props.splitter?.overlapChars),
+            ),
         )
 }
